@@ -1,11 +1,11 @@
 using System.Text;
-using EmployeeApi.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using EmployeeApi.Repositories;
 using EmployeeApi.Services;
+using EmployeeApi.Infrastructure;
+using EmployeeApi.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,13 +50,27 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"))
 );
+
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
 
-// Example of DI registration
-builder.Services.AddScoped<IClock, SystemClock>();
+// Repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<ICredentialRepository, CredentialRepository>();
+builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+
+// Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IPostAccessService, PostAccessService>();
+builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -80,8 +94,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-builder.Services.AddScoped<IEmployeeService, EmployeeService>(); 
 var app = builder.Build();
 
 // ======== Pipeline (Order matters) ========
@@ -99,7 +111,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseRouting();
 
 // If you add authentication/authorization later, keep them here
 app.UseAuthentication();
@@ -108,22 +119,12 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Minimal health ping (also have HealthController)
-app.MapGet("/", () => Results.Ok(new { app = "EmployeeApi", time = DateTime.UtcNow }));
+app.MapGet("/", () => Results.Ok(new { app = "api", time = DateTime.UtcNow }));
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate(); 
+    db.Database.Migrate();
 }
 
 app.Run();
-
-// For DI demo
-public interface IClock
-{
-    DateTime UtcNow();
-}
-public class SystemClock : IClock
-{
-    public DateTime UtcNow() => DateTime.UtcNow;
-}

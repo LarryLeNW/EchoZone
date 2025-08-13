@@ -1,49 +1,44 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using EmployeeApi.Contracts;
+using EmployeeApi.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
-namespace EmployeeApi.Controllers.Auth;
+namespace EmployeeApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(IAuthService service, IHttpContextAccessor accessor) : ControllerBase
 {
-    private readonly IConfiguration _config;
-    public AuthController(IConfiguration config) { _config = config; }
-
-    public record LoginRequest(string Username, string Password);
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest req, CancellationToken ct)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = Request.Headers.UserAgent.ToString();
+        var res = await service.RegisterAsync(req, ip, ua, ct);
+        return Ok(res);
+    }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest req)
+    public async Task<IActionResult> Login([FromBody] LoginRequest req, CancellationToken ct)
     {
-        var demoUser = _config["Auth:DemoUser:Username"] ?? "admin";
-        var demoPass = _config["Auth:DemoUser:Password"] ?? "password";
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = Request.Headers.UserAgent.ToString();
+        var res = await service.LoginAsync(req, ip, ua, ct);
+        return Ok(res);
+    }
 
-        if (req.Username != demoUser || req.Password != demoPass)
-            return Unauthorized(new { message = "Invalid credentials" });
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest req, CancellationToken ct)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = Request.Headers.UserAgent.ToString();
+        var res = await service.RefreshAsync(req, ip, ua, ct);
+        return Ok(res);
+    }
 
-        var issuer = _config["Jwt:Issuer"] ?? "EmployeeApi";
-        var audience = _config["Jwt:Audience"] ?? "EmployeeApiAudience";
-        var key = _config["Jwt:Key"] ?? "SuperSecretKey_ChangeMe";
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var keyBytes = Encoding.UTF8.GetBytes(key);
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.Name, req.Username),
-                new Claim(ClaimTypes.Role, "Admin")
-            }),
-            Expires = DateTime.UtcNow.AddHours(6),
-            Issuer = issuer,
-            Audience = audience,
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
-        };
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        var jwt = tokenHandler.WriteToken(token);
-        return Ok(new { access_token = jwt, expires_in = 6 * 3600 });
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] RefreshRequest req, CancellationToken ct)
+    {
+        await service.LogoutAsync(req, ct);
+        return Ok();
     }
 }

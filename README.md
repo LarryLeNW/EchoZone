@@ -1,4 +1,4 @@
-# EmployeeApi (.NET 8, ASP.NET Core Web API, EF Core, SQL Server)
+# Dự án mục đích học hỏi (.NET 8, ASP.NET Core Web API, EF Core, SQL Server,...)
 
 ## Yêu cầu
 - .NET SDK 8
@@ -7,7 +7,7 @@
 
 ## Cài & chạy
 ```bash
-cd EmployeeApi
+cd Education
 dotnet restore
 # Tạo migration + DB
 dotnet ef migrations add Init
@@ -24,4 +24,3 @@ Sửa `appsettings.json` khóa `ConnectionStrings:Default` cho phù hợp máy b
 ## Ghi chú
 - Seed 2 bản ghi mẫu trong `OnModelCreating`.
 - Pipeline đã cấu hình `UseExceptionHandler("/error")`, Swagger trong Development.
-- CRUD endpoint: `api/employees`
