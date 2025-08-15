@@ -122,24 +122,6 @@ export function AuthCard({
                 />
               </div>
 
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                  <div className="w-6 h-4 bg-red-500 relative overflow-hidden rounded-sm">
-                    <div className="absolute inset-0 bg-red-500"></div>
-                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
-                    <div className="absolute top-1 left-1 w-1 h-0.5 bg-white"></div>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-white/40" />
-                </div>
-                <Input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pl-20 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                  placeholder="Phone number"
-                />
-              </div>
-
               <Button
                 type="submit"
                 className="w-full bg-white/20 backdrop-blur-sm border border-white/20 hover:bg-white/30 text-white font-medium rounded-2xl h-14 mt-8 text-base transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"

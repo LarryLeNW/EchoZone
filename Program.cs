@@ -49,6 +49,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"))
 );
@@ -70,6 +72,7 @@ builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPostAccessService, PostAccessService>();
 builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthentication(options =>

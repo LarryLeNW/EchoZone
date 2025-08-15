@@ -12,33 +12,30 @@ public class AuthService(
     ICredentialRepository creds,
     ISessionRepository sessions,
     IPasswordService pwd,
+    IEmailService emailService,
     ITokenService tokens,
     Infrastructure.AppDbContext db
 ) : IAuthService
 {
     public async Task<TokenResponse> RegisterAsync(RegisterRequest req, string? ip, string? ua, CancellationToken ct = default)
     {
-        if (await profiles.HandleExistsAsync(req.Handle, ct))
-            throw new InvalidOperationException("Handle đã tồn tại");
-
         if (await db.UserEmails.AnyAsync(e => e.Email == req.Email, ct))
             throw new InvalidOperationException("Email đã tồn tại");
 
         var user = new User { UserId = Guid.NewGuid(), Status = 1 };
-        var profile = new Profile { UserId = user.UserId, DisplayName = req.DisplayName, Handle = req.Handle };
+        var profile = new Profile { UserId = user.UserId, DisplayName = req.DisplayName, Handle = GenerateHandle(req.DisplayName) };
         var email = new UserEmail { EmailId = Guid.NewGuid(), UserId = user.UserId, Email = req.Email, IsPrimary = true, IsVerified = false };
         var cred = new Credential
         {
             CredentialId = Guid.NewGuid(),
             UserId = user.UserId,
             Provider = "local",
-            ProviderSubject = "local",
+            ProviderSubject = req.Email,
             PasswordHash = pwd.Hash(req.Password),
             PasswordAlgo = "PBKDF2",
             PasswordUpdatedAt = DateTime.UtcNow
         };
 
-        // transaction
         using var tx = await db.Database.BeginTransactionAsync(ct);
         await db.Users.AddAsync(user, ct);
         await db.Profiles.AddAsync(profile, ct);
@@ -60,6 +57,7 @@ public class AuthService(
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
+        await emailService.SendVerificationEmailAsync(req.Email, "Cảm ơn bạn đã đến, chào mình đến với EchoZone.");
         return new TokenResponse(pair.AccessToken, pair.AccessExpiresAt, pair.RefreshToken, pair.RefreshExpiresAt, session.SessionId);
     }
 
@@ -133,5 +131,22 @@ public class AuthService(
         if (session is null) return;
         session.RevokedAt = DateTime.UtcNow;
         await sessions.SaveAsync(ct);
+    }
+
+    private string GenerateHandle(string displayName)
+    {
+        string handle = displayName
+            .ToLower()
+            .Replace(" ", "_")
+            .Replace("-", "_")
+            .Substring(0, Math.Min(displayName.Length, 30)); 
+
+        int counter = 1;
+        while (db.Profiles.Any(p => p.Handle == handle))
+        {
+            handle = $"{handle}_{counter}";
+            counter++;
+        }
+        return handle;
     }
 }

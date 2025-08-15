@@ -1,6 +1,6 @@
 namespace EmployeeApi.Contracts;
 
-public record RegisterRequest(string Email, string Password, string DisplayName, string Handle);
+public record RegisterRequest(string Email, string Password, string DisplayName);
 public record LoginRequest(string Email, string Password);
 public record RefreshRequest(string RefreshToken, Guid SessionId);
 
