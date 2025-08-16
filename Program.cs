@@ -1,110 +1,47 @@
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using EmployeeApi.Services;
+using EmployeeApi.Extensions;
 using EmployeeApi.Infrastructure;
-using EmployeeApi.Repositories;
+using EmployeeApi.Services;
+using Microsoft.EntityFrameworkCore; 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration & Services
-builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
-{
-    // Keep default automatic model validation response with [ApiController]
-});
-
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "EmployeeApi", Version = "v1" });
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        In = ParameterLocation.Header,
-        Description = "Nhập JWT token dạng: Bearer {token}",
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                },
-                Scheme = "oauth2",
-                Name = "Bearer",
-                In = ParameterLocation.Header
-            },
-            new List<string>()
-        }
-    });
-});
-
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"))
 );
-
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
-// AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 
-// Repositories
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
-builder.Services.AddScoped<ICredentialRepository, CredentialRepository>();
-builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+builder.Services.AddAppServices();
+builder.Services.AddSwaggerDocs(); 
+builder.Services.AddJwtAuth(builder.Configuration); 
 
-// Services
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IProfileService, ProfileService>();
-builder.Services.AddScoped<IPasswordService, PasswordService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IPostAccessService, PostAccessService>();
-builder.Services.AddScoped<IPostService, PostService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddHttpContextAccessor();
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-    };
-});
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 var app = builder.Build();
 
-// ======== Pipeline (Order matters) ========
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        if (!db.Database.CanConnect())
+        {
+            Console.WriteLine("Không thể kết nối SQL.");
+            Environment.Exit(1);
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Không thể kết nối SQL: " + ex.Message);
+        Environment.Exit(1);
+    }
+}
 
-// Global exception handler (Production-friendly)
 app.UseExceptionHandler("/error");
 
-// Development helpers
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -114,20 +51,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-
-// If you add authentication/authorization later, keep them here
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Minimal health ping (also have HealthController)
 app.MapGet("/", () => Results.Ok(new { app = "api", time = DateTime.UtcNow }));
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
 
 app.Run();
