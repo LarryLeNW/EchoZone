@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using EmployeeApi.Constants;
 using EmployeeApi.Contracts;
 using EmployeeApi.Domain;
+using EmployeeApi.Extensions;
 using EmployeeApi.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +22,7 @@ public class AuthService(
     public async Task<TokenResponse> RegisterAsync(RegisterRequest req, string? ip, string? ua, CancellationToken ct = default)
     {
         if (await db.UserEmails.AnyAsync(e => e.Email == req.Email, ct))
-            throw new InvalidOperationException("Email đã tồn tại");
+            throw new AppException(ErrorMessages.EmailExists, ErrorCodes.Conflict);
 
         var user = new User { UserId = Guid.NewGuid(), Status = 1 };
         var profile = new Profile { UserId = user.UserId, DisplayName = req.DisplayName, Handle = GenerateHandle(req.DisplayName) };
@@ -139,7 +141,7 @@ public class AuthService(
             .ToLower()
             .Replace(" ", "_")
             .Replace("-", "_")
-            .Substring(0, Math.Min(displayName.Length, 30)); 
+            .Substring(0, Math.Min(displayName.Length, 30));
 
         int counter = 1;
         while (db.Profiles.Any(p => p.Handle == handle))

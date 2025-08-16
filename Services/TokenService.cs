@@ -24,9 +24,14 @@ public interface ITokenService
     static byte[] HashRefresh(string token) => SHA256.HashData(Encoding.UTF8.GetBytes(token));
 }
 
-public class TokenService(IOptions<JwtOptions> opts) : ITokenService
+public class TokenService : ITokenService
 {
-    private readonly JwtOptions _o = opts.Value;
+    private readonly JwtOptions _o;
+
+    public TokenService(IOptions<JwtOptions> opts)
+    {
+        _o = opts.Value;
+    }
 
     public TokenPair IssueTokens(Guid userId, string handle, IEnumerable<Claim> extraClaims)
     {
@@ -36,6 +41,7 @@ public class TokenService(IOptions<JwtOptions> opts) : ITokenService
         var accessExpires = now.AddMinutes(_o.AccessTokenMinutes);
         var refreshExpires = now.AddDays(_o.RefreshTokenDays);
 
+        Console.WriteLine("JwtRegisteredClaimNames.Sub " + JwtRegisteredClaimNames.Sub);
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
@@ -57,7 +63,6 @@ public class TokenService(IOptions<JwtOptions> opts) : ITokenService
         return new TokenPair(access, refresh, accessExpires, refreshExpires);
     }
 }
-
 
 public static class ClaimsExtensions
 {

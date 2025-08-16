@@ -1,11 +1,13 @@
 using AutoMapper;
 using EmployeeApi.Contracts;
-namespace EmployeeApi.Mapping;
-
-public class ApiMappingProfile : Profile           
+using DomainProfile = EmployeeApi.Domain.Profile;
+namespace EmployeeApi.Mapping
 {
-    public ApiMappingProfile()
+    public class ApiMappingProfile : Profile
     {
-        CreateMap<Profile, ProfileResponse>(); 
+        public ApiMappingProfile()
+        {
+            CreateMap<DomainProfile, ProfileResponse>();
+        }
     }
 }

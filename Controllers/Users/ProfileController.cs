@@ -1,8 +1,10 @@
-using System.Security.Claims;
-using EmployeeApi.Contracts;
+﻿using EmployeeApi.Contracts;
+using EmployeeApi.Domain;
 using EmployeeApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace EmployeeApi.Controllers;
 
@@ -14,10 +16,9 @@ public class ProfileController(IProfileService service) : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
-        var sub = User.FindFirstValue("sub");
+        var sub = User.FindFirstValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
         if (sub is null) return Unauthorized();
         var uid = Guid.Parse(sub);
-
         var res = await service.GetMeAsync(uid, ct);
         return res is null ? NotFound() : Ok(res);
     }
