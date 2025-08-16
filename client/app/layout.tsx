@@ -4,7 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { FacebookChatPanel } from "@/components/facebook-chat-panel"
 import Head from "next/head"
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "sonner"
 
 
 
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="vi"  suppressHydrationWarning>
-        <Head>
+    <html lang="vi" suppressHydrationWarning>
+      <Head>
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap"
@@ -30,7 +30,7 @@ export default function RootLayout({
       <body className="font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
-          <Toaster />
+          <Toaster richColors />
           <FacebookChatPanel />
         </ThemeProvider>
       </body>

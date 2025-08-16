@@ -4,42 +4,44 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { X, Mail, ChevronDown, Eye, EyeOff } from "lucide-react"
+import { X, Mail, Eye, EyeOff } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { AuthSchema, AuthSchemaType } from "@/validates/auth.valid"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { registerAction } from "@/app/actions/auth-actions"
+import { toast } from "sonner"
 
-interface AuthCardProps {
-  isLoading: boolean
-  email: string
-  setEmail: (email: string) => void
-  password: string
-  setPassword: (password: string) => void
-  rememberMe: boolean
-  setRememberMe: (remember: boolean) => void
-  onSignIn: (e: React.FormEvent) => void
-  onSignUp: (e: React.FormEvent) => void
-  onSocialLogin: (provider: string) => void
-  onForgotPassword: () => void
-}
-
-export function AuthCard({
-  isLoading,
-  email,
-  setEmail,
-  password,
-  setPassword,
-  rememberMe,
-  setRememberMe,
-  onSignIn,
-  onSignUp,
-  onSocialLogin,
-  onForgotPassword,
-}: AuthCardProps) {
-  const [activeTab, setActiveTab] = useState("signup")
-  const [firstName, setFirstName] = useState("John")
-  const [lastName, setLastName] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("(775) 351-6501")
+export function AuthCard() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<AuthSchemaType>({
+    resolver: zodResolver(AuthSchema),
+    defaultValues: {
+      displayName: "user1",
+      email: "larrylenw@gmail.com",
+      password: "123456",
+    },
+  })
+  const [activeTab, setActiveTab] = useState("Đăng kí")
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
 
   const handleRedirect = () => {
+  }
+
+  const onSubmit = async (values: AuthSchemaType) => {
+    setIsLoading(true)
+    const res = await registerAction(values)
+    console.log("🚀 ~ onSubmit ~ res:", res)
+    if (res.success) {
+      toast.success("Đăng kí tài khoản thành công...");
+    } else {
+      toast.error(res.data.message);
+    }
+    setIsLoading(false)
   }
 
   return (
@@ -48,24 +50,22 @@ export function AuthCard({
         <div className="flex items-center justify-between mb-8">
           <div className="flex bg-black/30 backdrop-blur-sm rounded-full p-1 border border-white/10">
             <button
-              onClick={() => setActiveTab("signup")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${
-                activeTab === "signup"
-                  ? "bg-white/20 backdrop-blur-sm text-white border border-white/20 shadow-lg"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
-              }`}
+              onClick={() => setActiveTab("Đăng kí")}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${activeTab === "Đăng kí"
+                ? "bg-white/20 backdrop-blur-sm text-white border border-white/20 shadow-lg"
+                : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
             >
-              Sign up
+              Đăng kí
             </button>
             <button
-              onClick={() => setActiveTab("signin")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${
-                activeTab === "signin"
-                  ? "bg-white/20 backdrop-blur-sm text-white border border-white/20 shadow-lg"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
-              }`}
+              onClick={() => setActiveTab("Đăng nhập")}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${activeTab === "signin"
+                ? "bg-white/20 backdrop-blur-sm text-white border border-white/20 shadow-lg"
+                : "text-white/60 hover:text-white hover:bg-white/5"
+                }`}
             >
-              Sign in
+              Đăng nhập
             </button>
           </div>
           <button className="w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/10 hover:bg-black/40 transition-all duration-200 hover:scale-110 hover:rotate-90">
@@ -74,70 +74,77 @@ export function AuthCard({
         </div>
 
         <h1 className="text-3xl font-normal text-white mb-8 transition-all duration-300">
-          {activeTab === "signup" ? "Create an account" : "Welcome back"}
+          {activeTab === "Đăng kí" ? "Tạo tài khoản" : "Chào mừng trở lại"}
         </h1>
 
         <div className="relative overflow-hidden">
           <div
-            className={`transition-all duration-500 ease-in-out transform ${
-              activeTab === "signup" ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 absolute inset-0"
-            }`}
+            className={`transition-all duration-500 ease-in-out transform ${activeTab === "Đăng kí" ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 absolute inset-0"
+              }`}
           >
             <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                handleRedirect()
-              }}
+              onSubmit={handleSubmit(onSubmit)}
               className="space-y-4"
             >
-              <div className="grid grid-cols-2 gap-4">
-                <div className="relative">
-                  <Input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                    placeholder="First name"
-                  />
-                </div>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                    placeholder="Last name"
-                  />
-                </div>
+              <div className="relative">
+                <Input
+                  type="text"
+                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
+                  placeholder="Tên người dùng"
+                  {...register("displayName")}
+                  autoComplete="off"
+                />
+                {errors.displayName && (
+                  <p className="text-red-500 text-sm mt-1 text-end">{errors.displayName.message}</p>
+                )}
               </div>
-
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40 transition-colors duration-200" />
                 <Input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pl-12 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                  placeholder="Enter your email"
+                  placeholder="Nhập email của bạn"
+                  {...register("email")}
+                  autoComplete="off"
                 />
               </div>
-
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1 text-end">{errors.email.message}</p>
+              )}
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pr-12 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
+                  placeholder="Nhập mật khẩu"
+                  {...register("password")}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors duration-200"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1 text-end">{errors.password.message}</p>
+              )}
               <Button
                 type="submit"
                 className="w-full bg-white/20 backdrop-blur-sm border border-white/20 hover:bg-white/30 text-white font-medium rounded-2xl h-14 mt-8 text-base transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
                 disabled={isLoading}
               >
-                {isLoading ? "Creating account..." : "Create an account"}
+                {isLoading ? "Vui lòng đợi một chút..." : "Đăng kí"}
               </Button>
             </form>
           </div>
 
           <div
-            className={`transition-all duration-500 ease-in-out transform ${
-              activeTab === "signin" ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 absolute inset-0"
-            }`}
+            className={`transition-all duration-500 ease-in-out transform ${activeTab === "signin" ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 absolute inset-0"
+              }`}
           >
-            <form
+            {/* <form
               onSubmit={(e) => {
                 e.preventDefault()
                 handleRedirect()
@@ -199,14 +206,14 @@ export function AuthCard({
               >
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
-            </form>
+            </form> */}
           </div>
         </div>
 
         <div className="flex items-center my-8">
           <div className="flex-1 h-px bg-white/10"></div>
           <span className="px-4 text-white/40 text-sm font-medium">
-            {activeTab === "signup" ? "OR SIGN IN WITH" : "OR CONTINUE WITH"}
+            {activeTab === "Đăng kí" ? "OR SIGN IN WITH" : "OR CONTINUE WITH"}
           </span>
           <div className="flex-1 h-px bg-white/10"></div>
         </div>
@@ -233,7 +240,7 @@ export function AuthCard({
         </div>
 
         <p className="text-center text-white/40 text-sm mt-8">
-          {activeTab === "signup"
+          {activeTab === "Đăng kí"
             ? "By creating an account, you agree to our Terms & Service"
             : "By signing in, you agree to our Terms & Service"}
         </p>
