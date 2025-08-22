@@ -10,6 +10,7 @@ namespace EmployeeApi.Extensions
     {
         public static IServiceCollection AddJwtAuth(this IServiceCollection services, IConfiguration config)
         {
+            services.AddHttpContextAccessor();
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

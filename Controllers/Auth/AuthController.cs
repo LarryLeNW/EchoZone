@@ -1,5 +1,6 @@
 using EmployeeApi.Contracts;
 using EmployeeApi.Services;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmployeeApi.Controllers;

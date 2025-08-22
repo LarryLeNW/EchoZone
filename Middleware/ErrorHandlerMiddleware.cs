@@ -1,5 +1,6 @@
 using System.Text.Json;
 using EmployeeApi.Extensions;
+using Microsoft.AspNetCore.Mvc;
 
 public class ErrorHandlerMiddleware
 {
@@ -26,6 +27,20 @@ public class ErrorHandlerMiddleware
                 : JsonSerializer.Serialize(new { message = ex.Message });
 
             await context.Response.WriteAsync(result);
+        }
+        catch (EntityException ex)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = ex.Status;
+            System.Console.WriteLine("fields  : " + ex.Fields);
+            var payload = new
+            {
+                message = ex.Message,
+                status = ex.Status,
+                errors = ex.Fields
+            };
+
+            await context.Response.WriteAsJsonAsync(payload);
         }
         catch (Exception ex)
         {

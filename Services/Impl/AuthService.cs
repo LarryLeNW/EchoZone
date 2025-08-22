@@ -5,7 +5,7 @@ using EmployeeApi.Domain;
 using EmployeeApi.Extensions;
 using EmployeeApi.Repositories;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.Extensions.Options;
 namespace EmployeeApi.Services;
 
 public class AuthService(
@@ -16,13 +16,16 @@ public class AuthService(
     IPasswordService pwd,
     IEmailService emailService,
     ITokenService tokens,
-    Infrastructure.AppDbContext db
+    Infrastructure.AppDbContext db,
+    IHttpContextAccessor _httpContextAccessor
 ) : IAuthService
 {
     public async Task<TokenResponse> RegisterAsync(RegisterRequest req, string? ip, string? ua, CancellationToken ct = default)
     {
         if (await db.UserEmails.AnyAsync(e => e.Email == req.Email, ct))
-            throw new AppException(ErrorMessages.EmailExists, ErrorCodes.Conflict);
+        {
+            throw new EntityException([new FieldError("email", "Email đã này đã được sử dụng")]);
+        }
 
         var user = new User { UserId = Guid.NewGuid(), Status = 1 };
         var profile = new Profile { UserId = user.UserId, DisplayName = req.DisplayName, Handle = GenerateHandle(req.DisplayName) };
@@ -58,7 +61,8 @@ public class AuthService(
         await db.Sessions.AddAsync(session, ct);
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
-
+        SetCookie("accessToken", pair.AccessToken, pair.AccessExpiresAt);
+        SetCookie("refreshToken", pair.RefreshToken, pair.RefreshExpiresAt);
         await emailService.SendVerificationEmailAsync(req.Email, "Cảm ơn bạn đã đến, chào mình đến với EchoZone.");
         return new TokenResponse(pair.AccessToken, pair.AccessExpiresAt, pair.RefreshToken, pair.RefreshExpiresAt, session.SessionId);
     }
@@ -150,5 +154,17 @@ public class AuthService(
             counter++;
         }
         return handle;
+    }
+
+    private void SetCookie(string name, string value, DateTime expires)
+    {
+        var cookies = _httpContextAccessor.HttpContext.Response.Cookies;
+        cookies.Append(name, value, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = expires
+        });
     }
 }
