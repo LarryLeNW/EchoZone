@@ -1,5 +1,4 @@
 "use client"
-
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
@@ -13,12 +12,33 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { User, Settings, LogOut, Bookmark, HelpCircle } from "lucide-react"
-import Link from "next/link"
 import { ThemeToggle } from "./theme-toggle"
 import { useState } from "react"
-export function Header() {
-  const [showNotifications, setShowNotifications] = useState(false)
+import { useLogoutMutation } from "@/queries/useAuth"
+import { useAppStore } from "@/components/app-provider"
+import { handleErrorApi } from "@/lib/utils"
+import { Link, useRouter } from '@/../navigation'
+import { useProfileMe } from "@/queries/useProfile"
 
+export function Header() {
+  const router = useRouter()
+  const { data } = useProfileMe()
+  console.log("🚀 ~ Header ~ data:", data?.payload)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const logoutMutation = useLogoutMutation()
+  const disconnectSocket = useAppStore((state) => state.disconnectSocket)
+  const logout = async () => {
+    if (logoutMutation.isPending) return
+    try {
+      await logoutMutation.mutateAsync()
+      disconnectSocket()
+      router.push('/login')
+    } catch (error: any) {
+      handleErrorApi({
+        error
+      })
+    }
+  }
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-purple-200 dark:bg-gray-900/80 dark:border-purple-800">
       <div className="container mx-auto px-4 py-3">
@@ -191,7 +211,7 @@ export function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer text-red-600">
+                <DropdownMenuItem className="cursor-pointer text-red-600" onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Đăng xuất</span>
                 </DropdownMenuItem>

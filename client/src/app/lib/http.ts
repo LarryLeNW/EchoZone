@@ -1,4 +1,4 @@
-import { LoginResType } from '../@types/auth.schema'
+import { LoginResType, RegisterResType } from '../@types/auth.schema'
 import envConfig from '../../config'
 import {
     getAccessTokenFromLocalStorage,
@@ -101,15 +101,14 @@ const request = async <Response>(
             ...options?.headers
         } as any,
         body,
-        method
+        method,
+        credentials: 'include'
     })
     const payload: Response = await res.json()
     const data = {
         status: res.status,
         payload
     }
-    console.log("🚀 ~ request ~ res.ok:", res.ok)
-    console.log("🚀 ~ request ~ res.:", res)
     if (!res.ok) {
         if (res.status === ENTITY_ERROR_STATUS) {
             throw new EntityError(
@@ -124,7 +123,7 @@ const request = async <Response>(
                 if (!clientLogoutRequest) {
                     clientLogoutRequest = fetch('/api/auth/logout', {
                         method: 'POST',
-                        body: null, // Logout mình sẽ cho phép luôn luôn thành công
+                        body: null,
                         headers: {
                             ...baseHeaders
                         } as any
@@ -135,16 +134,10 @@ const request = async <Response>(
                     } finally {
                         removeTokensFromLocalStorage()
                         clientLogoutRequest = null
-                        // Redirect về trang login có thể dẫn đến loop vô hạn
-                        // Nếu không không được xử lý đúng cách
-                        // Vì nếu rơi vào trường hợp tại trang Login, chúng ta có gọi các API cần access token
-                        // Mà access token đã bị xóa thì nó lại nhảy vào đây, và cứ thế nó sẽ bị lặp
                         location.href = `/${locale}/login`
                     }
                 }
             } else {
-                // Đây là trường hợp khi mà chúng ta vẫn còn access token (còn hạn)
-                // Và chúng ta gọi API ở Next.js Server (Route Handler , Server Component) đến Server Backend
                 const accessToken = (options?.headers as any)?.Authorization.split(
                     'Bearer '
                 )[1]
@@ -152,25 +145,6 @@ const request = async <Response>(
             }
         } else {
             throw new HttpError(data)
-        }
-    }
-    if (isClient) {
-        const normalizeUrl = normalizePath(url)
-        if (['api/auth/login'].includes(normalizeUrl)) {
-            const { accessToken, refreshToken } = (payload as LoginResType).data
-            setAccessTokenToLocalStorage(accessToken)
-            setRefreshTokenToLocalStorage(refreshToken)
-        } else if ('api/auth/token' === normalizeUrl) {
-            const { accessToken, refreshToken } = payload as {
-                accessToken: string
-                refreshToken: string
-            }
-            setAccessTokenToLocalStorage(accessToken)
-            setRefreshTokenToLocalStorage(refreshToken)
-        } else if (
-            ['api/auth/logout', 'api/guest/auth/logout'].includes(normalizeUrl)
-        ) {
-            removeTokensFromLocalStorage()
         }
     }
     return data

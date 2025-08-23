@@ -6,13 +6,14 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { X, Mail, Eye, EyeOff } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { AuthSchema, AuthSchemaType } from "../../validateSchemas/auth.valid"
+import { AuthSchema, AuthSchemaType } from "../../schemaValidations/auth.valid"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { useRegisterMutation } from "../../queries/useAuth"
 import { handleErrorApi } from "@/lib/utils"
-
+import { useRouter } from '@/../navigation'
 export function AuthCard() {
+  const router = useRouter()
   const {
     register,
     handleSubmit,
@@ -37,9 +38,11 @@ export function AuthCard() {
   const onSubmit = async (values: AuthSchemaType) => {
     setIsLoading(true)
     try {
-      const data = await registerMutation.mutateAsync(values);
+      await registerMutation.mutateAsync(values);
       toast.success("Đăng kí thành công ...")
+      router.push('/')
     } catch (error) {
+      console.log("🚀 ~ onSubmit ~ error:", error)
       handleErrorApi({
         error,
         setError

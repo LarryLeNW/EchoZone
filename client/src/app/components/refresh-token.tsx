@@ -17,14 +17,14 @@ export default function RefreshToken() {
     let interval: any = null
     // Phải gọi lần đầu tiên, vì interval sẽ chạy sau thời gian TIMEOUT
     const onRefreshToken = (force?: boolean) => {
-      checkAndRefreshToken({
-        onError: () => {
-          clearInterval(interval)
-          disconnectSocket()
-          router.push('/login')
-        },
-        force
-      })
+      // checkAndRefreshToken({
+      //   onError: () => {
+      //     clearInterval(interval)
+      //     disconnectSocket()
+      //     router.push('/login')
+      //   },
+      //   force
+      // })
     }
 
     onRefreshToken()

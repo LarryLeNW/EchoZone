@@ -1,4 +1,5 @@
-import { ProfileView } from "../../components/profile/profile-view"
+import { ProfileView } from "@/components/profile/profile-view"
+import { useProfileMe } from "@/queries/useProfile"
 
 interface ProfilePageProps {
   params: {
