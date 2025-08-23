@@ -161,10 +161,11 @@ public class AuthService(
         var cookies = _httpContextAccessor.HttpContext.Response.Cookies;
         cookies.Append(name, value, new CookieOptions
         {
+            Expires = expires,
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = expires
+            Secure = false,                // dev HTTP
+            SameSite = SameSiteMode.Lax,   // cùng site 
+            Path = "/"
         });
     }
 }

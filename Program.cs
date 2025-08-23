@@ -20,9 +20,9 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddAppServices();
 builder.Services.AddSwaggerDocs();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    .AddJwtBearer(o =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        o.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
@@ -30,9 +30,42 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                string? token = null;
+
+                if (ctx.Request.Cookies.TryGetValue("accessToken", out var cookieToken) &&
+                    !string.IsNullOrWhiteSpace(cookieToken))
+                {
+                    token = cookieToken;
+                }
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    var auth = ctx.Request.Headers["Authorization"].FirstOrDefault();
+                    if (!string.IsNullOrEmpty(auth) &&
+                        auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        token = auth.Substring("Bearer ".Length).Trim();
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(token))
+                    ctx.Token = token;
+
+                Console.WriteLine("Token picked by API: " + (token ?? "<null>"));
+
+                return Task.CompletedTask;
+            }
         };
     });
+
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Services.AddCors(options =>
 {
@@ -64,6 +97,12 @@ using (var scope = app.Services.CreateScope())
         Environment.Exit(1);
     }
 }
+
+app.MapGet("/debug/cookies", (HttpRequest req) =>
+{
+    var v = req.Cookies["accessToken"];
+    return Results.Ok(new { accessToken = v ?? "<null>" });
+});
 
 app.UseExceptionHandler("/error");
 
