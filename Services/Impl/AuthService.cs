@@ -70,13 +70,13 @@ public class AuthService(
     public async Task<TokenResponse> LoginAsync(LoginRequest req, string? ip, string? ua, CancellationToken ct = default)
     {
         var user = await users.GetByEmailAsync(req.Email.Trim(), ct);
-        if (user is null) throw new InvalidOperationException("Sai email hoặc mật khẩu");
+        if (user is null) throw new EntityException([new FieldError("email", "Email không tồn tại")]);
 
         var cred = await creds.GetLocalByUserIdAsync(user.UserId, ct);
         if (cred is null || cred.PasswordHash is null || !pwd.Verify(req.Password, cred.PasswordHash))
-            throw new InvalidOperationException("Sai email hoặc mật khẩu");
+            throw new EntityException([new FieldError("password", "Email hoặc mật khẩu không đúng")]);
 
-        var profile = await profiles.GetByUserIdAsync(user.UserId, ct) ?? throw new InvalidOperationException("Profile không tồn tại");
+        var profile = await profiles.GetByUserIdAsync(user.UserId, ct) ?? throw new AuthException("Tài khoản không hợp lệ, vui lòng liên hệ admin");
 
         var pair = tokens.IssueTokens(user.UserId, profile.Handle, Array.Empty<Claim>());
 
@@ -94,7 +94,8 @@ public class AuthService(
         var u = await db.Users.FindAsync([user.UserId], ct);
         if (u != null) u.LastLoginAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-
+        SetCookie("accessToken", pair.AccessToken, pair.AccessExpiresAt);
+        SetCookie("refreshToken", pair.RefreshToken, pair.RefreshExpiresAt);
         return new TokenResponse(pair.AccessToken, pair.AccessExpiresAt, pair.RefreshToken, pair.RefreshExpiresAt, session.SessionId);
     }
 
@@ -141,20 +142,21 @@ public class AuthService(
 
     private string GenerateHandle(string displayName)
     {
-        string handle = displayName
+        string baseHandle = displayName
             .ToLower()
             .Replace(" ", "_")
-            .Replace("-", "_")
-            .Substring(0, Math.Min(displayName.Length, 30));
+            .Replace("-", "_");
 
-        int counter = 1;
-        while (db.Profiles.Any(p => p.Handle == handle))
-        {
-            handle = $"{handle}_{counter}";
-            counter++;
-        }
+        if (baseHandle.Length > 20)
+            baseHandle = baseHandle.Substring(0, 20);
+
+        string uuidSuffix = Guid.NewGuid().ToString("N").Substring(0, 8);
+
+        string handle = $"{baseHandle}{uuidSuffix}";
+
         return handle;
     }
+
 
     private void SetCookie(string name, string value, DateTime expires)
     {

@@ -33,4 +33,14 @@ namespace EmployeeApi.Extensions
             Fields = fields.ToList().AsReadOnly();
         }
     }
+
+    public sealed class AuthException : Exception
+    {
+        public int Status { get; }
+        public AuthException(string message = "Unauthorized",
+                             int status = StatusCodes.Status401Unauthorized) : base(message)
+        {
+            Status = status;
+        }
+    }
 }

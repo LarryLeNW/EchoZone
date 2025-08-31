@@ -2,7 +2,6 @@ using EmployeeApi.Contracts;
 using EmployeeApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace EmployeeApi.Controllers;
 

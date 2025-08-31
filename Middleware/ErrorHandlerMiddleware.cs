@@ -1,7 +1,6 @@
+// ErrorHandlerMiddleware.cs
 using System.Text.Json;
 using EmployeeApi.Extensions;
-using Microsoft.AspNetCore.Mvc;
-
 public class ErrorHandlerMiddleware
 {
     private readonly RequestDelegate _next;
@@ -32,14 +31,33 @@ public class ErrorHandlerMiddleware
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = ex.Status;
-            System.Console.WriteLine("fields  : " + ex.Fields);
             var payload = new
             {
                 message = ex.Message,
                 status = ex.Status,
                 errors = ex.Fields
             };
+            await context.Response.WriteAsJsonAsync(payload);
+        }
+        catch (AuthException ex)
+        {
+            context.Response.Cookies.Append("session_token", string.Empty, new CookieOptions
+            {
+                Path = "/",
+                HttpOnly = true,
+                SameSite = SameSiteMode.None,
+                Secure = true,
+                Expires = DateTimeOffset.UnixEpoch
+            });
 
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = ex.Status;
+
+            var payload = new
+            {
+                message = ex.Message,
+                statusCode = ex.Status
+            };
             await context.Response.WriteAsJsonAsync(payload);
         }
         catch (Exception ex)

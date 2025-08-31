@@ -41,7 +41,6 @@ public class TokenService : ITokenService
         var accessExpires = now.AddMinutes(_o.AccessTokenMinutes);
         var refreshExpires = now.AddDays(_o.RefreshTokenDays);
 
-        Console.WriteLine("JwtRegisteredClaimNames.Sub " + JwtRegisteredClaimNames.Sub);
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),

@@ -98,12 +98,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.MapGet("/debug/cookies", (HttpRequest req) =>
-{
-    var v = req.Cookies["accessToken"];
-    return Results.Ok(new { accessToken = v ?? "<null>" });
-});
-
 app.UseExceptionHandler("/error");
 
 if (app.Environment.IsDevelopment())
