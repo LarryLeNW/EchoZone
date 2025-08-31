@@ -1,4 +1,4 @@
-import { LoginResType, RegisterResType } from '../@types/auth.schema'
+import { LoginResType, RegisterResType } from '../schemaValidations/auth.schema'
 import envConfig from '../../config'
 import {
     getAccessTokenFromLocalStorage,

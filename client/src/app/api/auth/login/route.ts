@@ -1,14 +1,13 @@
 import authApiRequest from '@/apiRequests/auth'
 import { cookies } from 'next/headers'
-import jwt from 'jsonwebtoken'
 import { HttpError } from '@/lib/http'
-import { RegisterBodyType } from '@/schemaValidations/auth.schema'
+import { LoginBodyType } from '@/schemaValidations/auth.schema'
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as RegisterBodyType
+  const body = (await request.json()) as LoginBodyType
   const cookieStore = await cookies()
   try {
-    const { payload } = await authApiRequest.sRegister(body)
+    const { payload } = await authApiRequest.sLogin(body)
     const { accessToken, refreshToken, refreshExpiresAt, accessExpiresAt } = payload
     const at = new Date(accessExpiresAt)
     const rt = new Date(refreshExpiresAt)

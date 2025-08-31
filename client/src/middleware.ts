@@ -20,23 +20,14 @@ export function middleware(request: NextRequest) {
   const response = intlMiddleware(request)
 
   const { pathname, searchParams } = request.nextUrl
-  const accessToken = request.cookies.get('accessToken')?.value
-  const refreshToken = request.cookies.get('refreshToken')?.value
-  console.log("🚀 ~ middleware ~ refreshToken:", refreshToken)
+  // const accessToken = request.cookies.get('accessToken')?.value
   const locale = request.cookies.get('NEXT_LOCALE')?.value ?? defaultLocale
-
-  if (isLogin(pathname) || isRefresh(pathname)) {
-    if (refreshToken && isLogin(pathname) && !searchParams.get('accessToken')) {
-      return NextResponse.redirect(new URL(`/${locale}`, request.url))
-    }
-    return response
-  }
 
   const inManage = startsWithAny(pathname, managePrefixes)
   const inGuestHome = isGuestHome(pathname)
   const inPrivate = inManage || inGuestHome
 
-  // if (!refreshToken && inPrivate) {
+  // if (inPrivate) {
   //   const url = new URL(`/${locale}/login`, request.url)
   //   url.searchParams.set('clearTokens', 'true')
   //   return NextResponse.redirect(url)

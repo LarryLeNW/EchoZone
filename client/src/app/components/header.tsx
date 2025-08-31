@@ -13,7 +13,7 @@ import {
 } from "./ui/dropdown-menu"
 import { User, Settings, LogOut, Bookmark, HelpCircle } from "lucide-react"
 import { ThemeToggle } from "./theme-toggle"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useLogoutMutation } from "@/queries/useAuth"
 import { useAppStore } from "@/components/app-provider"
 import { handleErrorApi } from "@/lib/utils"
@@ -22,10 +22,17 @@ import { useProfileMe } from "@/queries/useProfile"
 
 export function Header() {
   const router = useRouter()
-  const { data } = useProfileMe()
-  console.log("🚀 ~ Header ~ data:", data?.payload)
+  const { data, isError, isLoading } = useProfileMe()
   const [showNotifications, setShowNotifications] = useState(false)
   const logoutMutation = useLogoutMutation()
+
+  useEffect(() => {
+    if (!isLoading && (!data || isError)) {
+      router.push("/login")
+    }
+  }, [data, isError, isLoading, router])
+
+
   const disconnectSocket = useAppStore((state) => state.disconnectSocket)
   const logout = async () => {
     if (logoutMutation.isPending) return
@@ -41,7 +48,7 @@ export function Header() {
   }
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-purple-200 dark:bg-gray-900/80 dark:border-purple-800">
-      <div className="container mx-auto px-4 py-3">
+      <div className=" mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg flex items-center justify-center">
@@ -181,8 +188,7 @@ export function Header() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Nguyễn Văn A</p>
-                    <p className="text-xs leading-none text-muted-foreground">nguyenvana@example.com</p>
+                    <p className="text-sm font-medium leading-none text-center">{data?.payload.displayName}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

@@ -48,33 +48,36 @@ const mockPosts = [
     timestamp: "6h ago",
   },
 ]
-
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Header />
-
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-3 space-y-6">
-            <TrendingTopics />
-          </div>
-
-          <div className="lg:col-span-6 space-y-6">
-            <CreatePost />
-
-            <div className="space-y-6">
-              {mockPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
+    <main className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-3">
+          <div className="lg:sticky lg:top-20">
+            <div className="group space-y-6 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto pr-1 custom-scrollbar">
+              <TrendingTopics />
             </div>
           </div>
+        </div>
 
-          <div className="lg:col-span-3 space-y-6">
-            <RightSidebar />
+        <div className="lg:col-span-6 space-y-6">
+          <CreatePost />
+          <div className="space-y-6">
+            {mockPosts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
           </div>
         </div>
-      </main>
-    </div>
+
+        <div className="lg:col-span-3">
+          <div className="lg:sticky lg:top-20">
+            <div className="group space-y-6 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto pl-1 custom-scrollbar">
+              <RightSidebar />
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   )
 }
+

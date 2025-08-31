@@ -14,8 +14,7 @@ export type ProfileType = z.TypeOf<typeof ProfileSchema>
 export const ProfileRes = z
   .object({
     data: ProfileSchema,
-    message: z.string()
   })
   .strict()
 
-export type ProfileResType = z.TypeOf<typeof ProfileRes>
+export type ProfileResType = z.TypeOf<typeof ProfileSchema>

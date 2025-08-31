@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { PostCard } from "../post-card"
 import { MapPin, Calendar, LinkIcon, Camera, Edit3, Settings, MoreHorizontal, Heart } from "lucide-react"
+import { useProfileMe } from "@/queries/useProfile"
+import { CreatePost } from "@/components/create-post"
 
 interface User {
   id: string
@@ -21,7 +23,8 @@ interface User {
   followers: number
   following: number
   posts: number
-  isOwnProfile?: boolean
+  isOwnProfile?: boolean,
+  displayName: string
 }
 
 interface ProfileViewProps {
@@ -96,9 +99,28 @@ const mockLikedPosts = [
   },
 ]
 
-export function ProfileView({ user }: ProfileViewProps) {
+const user = {
+  id: "me",
+  name: "Nguyễn Văn A",
+  username: "@nguyenvana",
+  bio: "Passionate developer & content creator. Love sharing knowledge and connecting with amazing people! 🚀",
+  avatar: "/diverse-profile-avatars.png",
+  coverImage: "/placeholder-573u4.png",
+  location: "Ho Chi Minh City, Vietnam",
+  website: "nguyenvana.dev",
+  joinDate: "January 2023",
+  followers: 1234,
+  following: 567,
+  posts: 89,
+  isOwnProfile: true,
+}
+
+export function ProfileView() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState("posts")
+  const { data } = useProfileMe()
+  console.log("🚀 ~ ProfileView ~ data:", data)
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -120,8 +142,8 @@ export function ProfileView({ user }: ProfileViewProps) {
             <div className="flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-6">
               <div className="relative">
                 <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-800 shadow-xl">
-                  <AvatarImage src={user.avatar || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-purple-600 text-white text-2xl">{user.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={"/placeholder.svg"} />
+                  <AvatarFallback className="bg-purple-600 text-white text-2xl">{data?.payload?.displayName}</AvatarFallback>
                 </Avatar>
                 {user.isOwnProfile && (
                   <Button
@@ -134,8 +156,8 @@ export function ProfileView({ user }: ProfileViewProps) {
               </div>
 
               <div className="text-center md:text-left mb-4 md:mb-0">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{user.name}</h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">{user.username}</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{data?.payload?.displayName}</h1>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">197 friends</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-gray-500 dark:text-gray-400">
                   {user.location && (
                     <div className="flex items-center space-x-1">
@@ -184,8 +206,8 @@ export function ProfileView({ user }: ProfileViewProps) {
                   <Button
                     onClick={() => setIsFollowing(!isFollowing)}
                     className={`px-8 py-2 rounded-full font-semibold transition-all duration-300 ${isFollowing
-                        ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                        : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+                      ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                      : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
                       }`}
                   >
                     {isFollowing ? "Following" : "Follow"}
@@ -246,6 +268,7 @@ export function ProfileView({ user }: ProfileViewProps) {
             </TabsList>
 
             <TabsContent value="posts" className="space-y-6">
+              <CreatePost />
               {mockPosts.length > 0 ? (
                 mockPosts.map((post) => <PostCard key={post.id} post={post} />)
               ) : (
@@ -332,6 +355,6 @@ export function ProfileView({ user }: ProfileViewProps) {
           </Tabs>
         </div>
       </div>
-    </div>
+    </div >
   )
 }

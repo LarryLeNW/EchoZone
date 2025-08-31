@@ -8,5 +8,5 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ params }: ProfilePageProps) {
-  return <ProfileView userId={params.userId} />
+  return <ProfileView />
 }

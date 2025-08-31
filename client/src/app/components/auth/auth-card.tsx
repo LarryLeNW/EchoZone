@@ -1,48 +1,61 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { X, Mail, Eye, EyeOff } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { AuthSchema, AuthSchemaType } from "../../schemaValidations/auth.valid"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { useRegisterMutation } from "../../queries/useAuth"
+import { useLoginMutation, useRegisterMutation } from "../../queries/useAuth"
 import { handleErrorApi } from "@/lib/utils"
 import { useRouter } from '@/../navigation'
+import { LoginBody, LoginBodyType, RegisterBody, RegisterBodyType } from "@/schemaValidations/auth.schema"
+enum AuthMode {
+  LOGIN, REGISTER
+}
+
 export function AuthCard() {
   const router = useRouter()
+
+  const [activeTab, setActiveTab] = useState<AuthMode>(AuthMode.LOGIN)
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const registerMutation = useRegisterMutation()
+  const loginMutation = useLoginMutation()
+
+  const isLogin = activeTab === AuthMode.LOGIN
+  const resolver = useMemo(
+    () => zodResolver(isLogin ? LoginBody : RegisterBody),
+    [isLogin]
+  )
+  const handleRedirect = () => {
+  }
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError
-  } = useForm<AuthSchemaType>({
-    resolver: zodResolver(AuthSchema),
-    defaultValues: {
-      displayName: "user1",
-      email: "larrylenw@gmail.com",
-      password: "123456",
-    },
+    setError,
+    clearErrors,
+    reset
+  } = useForm<LoginBodyType & RegisterBodyType>({
+    resolver,
+    shouldUnregister: true,
   })
-  const [activeTab, setActiveTab] = useState("Đăng kí")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const registerMutation = useRegisterMutation()
 
-  const handleRedirect = () => {
-  }
-
-  const onSubmit = async (values: AuthSchemaType) => {
+  const onSubmit = async (values: any) => {
     setIsLoading(true)
     try {
-      await registerMutation.mutateAsync(values);
-      toast.success("Đăng kí thành công ...")
+      if (AuthMode.REGISTER === activeTab) {
+        await registerMutation.mutateAsync(values);
+      } else {
+        await loginMutation.mutateAsync(values);
+      }
+      toast.success(AuthMode.REGISTER === activeTab ? "Đăng kí thành công ..." : "Đăng nhập thành công ...")
       router.push('/')
     } catch (error) {
-      console.log("🚀 ~ onSubmit ~ error:", error)
       handleErrorApi({
         error,
         setError
@@ -51,14 +64,18 @@ export function AuthCard() {
     setIsLoading(false)
   }
 
+  useEffect(() => {
+    clearErrors()
+  }, [activeTab, clearErrors])
+
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 shadow-2xl transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl">
         <div className="flex items-center justify-between mb-8">
           <div className="flex bg-black/30 backdrop-blur-sm rounded-full p-1 border border-white/10">
             <button
-              onClick={() => setActiveTab("Đăng kí")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${activeTab === "Đăng kí"
+              onClick={() => setActiveTab(AuthMode.REGISTER)}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${activeTab === AuthMode.REGISTER
                 ? "bg-white/20 backdrop-blur-sm text-white border border-white/20 shadow-lg"
                 : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
@@ -66,8 +83,8 @@ export function AuthCard() {
               Đăng kí
             </button>
             <button
-              onClick={() => setActiveTab("Đăng nhập")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${activeTab === "signin"
+              onClick={() => setActiveTab(AuthMode.LOGIN)}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 ${activeTab === AuthMode.LOGIN
                 ? "bg-white/20 backdrop-blur-sm text-white border border-white/20 shadow-lg"
                 : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
@@ -78,130 +95,130 @@ export function AuthCard() {
         </div>
 
         <h1 className="text-3xl font-normal text-white mb-8 transition-all duration-300">
-          {activeTab === "Đăng kí" ? "Tạo tài khoản" : "Chào mừng trở lại"}
+          {activeTab === AuthMode.REGISTER ? "Tạo tài khoản" : "Chào mừng trở lại"}
         </h1>
 
         <div className="relative overflow-hidden">
           <div
-            className={`transition-all duration-500 ease-in-out transform ${activeTab === "Đăng kí" ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 absolute inset-0"
+            className={`transition-all duration-500 ease-in-out transform ${activeTab === AuthMode.REGISTER
+              ? "translate-x-0 opacity-100 relative z-10"
+              : "-translate-x-full opacity-0 absolute inset-0 pointer-events-none"
               }`}
           >
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="space-y-4"
-            >
-              <div className="relative">
-                <Input
-                  type="text"
-                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                  placeholder="Tên người dùng"
-                  {...register("displayName")}
-                  autoComplete="off"
-                />
-                {errors.displayName && (
-                  <p className="text-red-500 text-sm mt-1 text-end">{errors.displayName.message}</p>
-                )}
-              </div>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40 transition-colors duration-200" />
-                <Input
-                  type="email"
-                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pl-12 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                  placeholder="Nhập email của bạn"
-                  {...register("email")}
-                  autoComplete="off"
-                />
-              </div>
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1 text-end">{errors.email.message}</p>
+            <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {activeTab === AuthMode.REGISTER && (
+                <>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0"
+                      placeholder="Tên người dùng"
+                      {...register("displayName")}
+                      autoComplete="off"
+                    />
+                    {errors.displayName && (
+                      <p className="text-red-500 text-sm mt-1 text-end">
+                        {errors.displayName.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <Input
+                      type="email"
+                      className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pl-12"
+                      placeholder="Nhập email của bạn"
+                      {...register("email")}
+                      autoComplete="off"
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1 text-end">{errors.email.message}</p>
+                  )}
+
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pr-12"
+                      placeholder="Nhập mật khẩu"
+                      {...register("password")}
+                      autoComplete="off"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1 text-end">{errors.password.message}</p>
+                  )}
+
+                  <Button type="submit" className="w-full bg-white/20 border border-white/20 hover:bg-white/30 text-white rounded-2xl h-14 mt-8" disabled={isLoading}>
+                    {isLoading ? "Vui lòng đợi một chút..." : "Đăng kí"}
+                  </Button>
+                </>
               )}
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pr-12 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                  placeholder="Nhập mật khẩu"
-                  {...register("password")}
-                  autoComplete="off"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors duration-200"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-red-500 text-sm mt-1 text-end">{errors.password.message}</p>
-              )}
-              <Button
-                type="submit"
-                className="w-full bg-white/20 backdrop-blur-sm border border-white/20 hover:bg-white/30 text-white font-medium rounded-2xl h-14 mt-8 text-base transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-                disabled={isLoading}
-              >
-                {isLoading ? "Vui lòng đợi một chút..." : "Đăng kí"}
-              </Button>
             </form>
           </div>
 
           <div
-            className={`transition-all duration-500 ease-in-out transform ${activeTab === "Đăng nhập" ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 absolute inset-0"
+            className={`transition-all duration-500 ease-in-out transform ${activeTab === AuthMode.LOGIN
+              ? "translate-x-0 opacity-100 relative z-10"
+              : "translate-x-full opacity-0 absolute inset-0 pointer-events-none"
               }`}
           >
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                handleRedirect()
-              }}
-              className="space-y-4"
-            >
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40 transition-colors duration-200" />
-                <Input
-                  type="email"
-                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pl-12 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                  placeholder="Enter your email"
-                />
-              </div>
+            <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4" aria-hidden={activeTab !== AuthMode.LOGIN}>
+              {activeTab === AuthMode.LOGIN && (
+                <>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <Input
+                      {...register("email")}
+                      type="email"
+                      className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pl-12"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1 text-end">{errors.email.message}</p>
+                  )}
 
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pr-12 text-base transition-all duration-200 hover:bg-black/30 focus:bg-black/30"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors duration-200"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
+                  <div className="relative">
+                    <Input
+                      {...register("password")}
+                      type={showPassword ? "text" : "password"}
+                      className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl h-14 text-white placeholder:text-white/40 focus:border-white/30 focus:ring-0 pr-12"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm mt-1 text-end">{errors.password.message}</p>
+                  )}
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded border border-white/20 bg-black/20 text-white focus:ring-white/20 focus:ring-2"
-                  />
-                  <span className="text-white/60 text-sm">Remember me</span>
-                </label>
-                <button
-                  type="button"
-                  className="text-white/60 hover:text-white text-sm transition-colors duration-200"
-                >
-                  Forgot password?
-                </button>
-              </div>
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 rounded border border-white/20 bg-black/20 text-white focus:ring-white/20 focus:ring-2" />
+                      <span className="text-white/60 text-sm">Remember me</span>
+                    </label>
+                    <button type="button" className="text-white/60 hover:text-white text-sm">Forgot password?</button>
+                  </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-white/20 backdrop-blur-sm border border-white/20 hover:bg-white/30 text-white font-medium rounded-2xl h-14 mt-8 text-base transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-                disabled={isLoading}
-              >
-                {isLoading ? "Signing in..." : "Sign in"}
-              </Button>
+                  <Button type="submit" className="w-full bg-white/20 border border-white/20 hover:bg-white/30 text-white rounded-2xl h-14 mt-8" disabled={isLoading}>
+                    {isLoading ? "Vui lòng đợi một chút" : "Đăng nhập"}
+                  </Button>
+                </>
+              )}
             </form>
           </div>
         </div>
@@ -209,7 +226,7 @@ export function AuthCard() {
         <div className="flex items-center my-8">
           <div className="flex-1 h-px bg-white/10"></div>
           <span className="px-4 text-white/40 text-sm font-medium">
-            {activeTab === "Đăng kí" ? "OR SIGN IN WITH" : "OR CONTINUE WITH"}
+            {activeTab === AuthMode.LOGIN ? "hoặc đăng nhập với" : "hoặc tiếp tục với"}
           </span>
           <div className="flex-1 h-px bg-white/10"></div>
         </div>
@@ -228,7 +245,7 @@ export function AuthCard() {
         </div>
 
         <p className="text-center text-white/40 text-sm mt-8">
-          {activeTab === "Đăng kí"
+          {activeTab === AuthMode.REGISTER
             ? "By creating an account, you agree to our Terms & Service"
             : "By signing in, you agree to our Terms & Service"}
         </p>

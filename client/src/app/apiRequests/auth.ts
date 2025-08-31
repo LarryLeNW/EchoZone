@@ -7,7 +7,8 @@ import {
   RefreshTokenResType,
   RegisterBodyType,
   RegisterResType
-} from '../@types/auth.schema'
+} from '../schemaValidations/auth.schema'
+
 
 const authApiRequest = {
   refreshTokenRequest: null as Promise<{
