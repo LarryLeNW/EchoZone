@@ -25,5 +25,8 @@ public record PostResponse(
     string? Body, string? MediaJson,
     byte Visibility, bool AllowComments, bool AllowReactions,
     DateTime CreatedAt, DateTime? UpdatedAt,
-    int CommentCount, int ReactionCount
+    int CommentCount, int ReactionCount,
+    string? AuthorDisplayName,
+    string? AuthorHandle,
+    string? AuthorAvatarUrl
 );

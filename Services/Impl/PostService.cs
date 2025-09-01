@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using EmployeeApi.Contracts;
 using EmployeeApi.Domain;
 using EmployeeApi.Infrastructure;
@@ -7,6 +8,25 @@ namespace EmployeeApi.Services;
 
 public class PostService(AppDbContext db, IPostAccessService access) : IPostService
 {
+    private IQueryable<PostResponse> ProjectToDto(IQueryable<Post> posts)
+    {
+        var profiles = db.Set<Profile>();
+
+        return from p in posts
+               join pr in profiles on p.AuthorId equals pr.UserId into gj
+               from pr in gj.DefaultIfEmpty()
+               select new PostResponse(
+                   p.PostId, p.AuthorId,
+                   p.Body, p.MediaJson,
+                   (byte)p.Visibility, p.AllowComments, p.AllowReactions,
+                   p.CreatedAt, p.UpdatedAt,
+                   p.CommentCount, p.ReactionCount,
+                   pr != null ? pr.DisplayName : null,
+                   pr != null ? pr.Handle : null,
+                   pr != null ? pr.AvatarUrl : null
+               );
+    }
+
     public async Task<(ServiceError error, PostResponse? data)> CreateAsync(Guid userId, CreatePostRequest req, CancellationToken ct)
     {
         var post = new Post
@@ -26,20 +46,20 @@ public class PostService(AppDbContext db, IPostAccessService access) : IPostServ
         if (post.Visibility == PostVisibility.Custom)
         {
             if (req.AllowUserIds is { Count: > 0 })
-            {
                 await db.PostAudiences.AddRangeAsync(
                     req.AllowUserIds.Select(uid => new PostAudience { PostId = post.PostId, UserId = uid, Mode = AudienceMode.Allow }), ct);
-            }
+
             if (req.DenyUserIds is { Count: > 0 })
-            {
                 await db.PostAudiences.AddRangeAsync(
                     req.DenyUserIds.Select(uid => new PostAudience { PostId = post.PostId, UserId = uid, Mode = AudienceMode.Deny }), ct);
-            }
         }
 
         await db.SaveChangesAsync(ct);
 
-        var dto = ToDto(post);
+        var dto = await ProjectToDto(
+              db.Posts.AsNoTracking().Where(p => p.PostId == post.PostId)
+          ).FirstAsync(ct);
+
         return (ServiceError.None, dto);
     }
 
@@ -51,7 +71,11 @@ public class PostService(AppDbContext db, IPostAccessService access) : IPostServ
         var canView = await access.CanViewAsync(viewerId, post, ct);
         if (!canView) return (ServiceError.Forbidden, null);
 
-        return (ServiceError.None, ToDto(post));
+        var dto = await ProjectToDto(
+                      db.Posts.AsNoTracking().Where(p => p.PostId == postId)
+                  ).FirstAsync(ct);
+
+        return (ServiceError.None, dto);
     }
 
     public async Task<(ServiceError error, IEnumerable<PostResponse> data)> ListAsync(Guid? viewerId, Guid? authorId, int page, int pageSize, CancellationToken ct)
@@ -64,9 +88,13 @@ public class PostService(AppDbContext db, IPostAccessService access) : IPostServ
 
         q = access.ApplyVisibility(q, viewerId).OrderByDescending(p => p.CreatedAt);
 
-        var items = await q.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        return (ServiceError.None, items.Select(ToDto));
+        var items = await ProjectToDto(
+                        q.Skip((page - 1) * pageSize).Take(pageSize)
+                   ).ToListAsync(ct);
+
+        return (ServiceError.None, items);
     }
+
 
     public async Task<ServiceError> UpdateAsync(Guid userId, Guid postId, UpdatePostRequest req, CancellationToken ct)
     {
@@ -120,8 +148,4 @@ public class PostService(AppDbContext db, IPostAccessService access) : IPostServ
         return ServiceError.None;
     }
 
-    private static PostResponse ToDto(Post p) =>
-        new(p.PostId, p.AuthorId, p.Body, p.MediaJson,
-            (byte)p.Visibility, p.AllowComments, p.AllowReactions,
-            p.CreatedAt, p.UpdatedAt, p.CommentCount, p.ReactionCount);
 }
