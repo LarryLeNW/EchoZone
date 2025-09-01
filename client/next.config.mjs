@@ -14,6 +14,10 @@ const nextConfig = {
                 hostname: "via.placeholder.com",
                 pathname: "/**",
             },
+            {
+                hostname: "res.cloudinary.com",
+                pathname: "/**",
+            },
         ],
     },
 };

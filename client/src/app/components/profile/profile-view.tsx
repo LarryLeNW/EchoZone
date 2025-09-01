@@ -9,6 +9,8 @@ import { PostCard } from "../post-card"
 import { MapPin, Calendar, LinkIcon, Camera, Edit3, Settings, MoreHorizontal, Heart } from "lucide-react"
 import { useProfileMe } from "@/queries/useProfile"
 import { CreatePost } from "@/components/create-post"
+import { useGetPostListQuery } from "@/queries/useBlog"
+import { PostResponseType } from "@/schemaValidations/post.schema"
 
 interface User {
   id: string
@@ -118,9 +120,12 @@ const user = {
 export function ProfileView() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState("posts")
-  const { data } = useProfileMe()
-  console.log("🚀 ~ ProfileView ~ data:", data)
-
+  const { data: me } = useProfileMe();
+  const authorId = me?.payload?.userId as string | undefined;
+  const { data: posts = [], isLoading, isError } = useGetPostListQuery(
+    { authorId },
+    { enabled: !!authorId }
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -143,7 +148,7 @@ export function ProfileView() {
               <div className="relative">
                 <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-800 shadow-xl">
                   <AvatarImage src={"/placeholder.svg"} />
-                  <AvatarFallback className="bg-purple-600 text-white text-2xl">{data?.payload?.displayName}</AvatarFallback>
+                  <AvatarFallback className="bg-purple-600 text-white text-2xl">{me?.payload?.displayName}</AvatarFallback>
                 </Avatar>
                 {user.isOwnProfile && (
                   <Button
@@ -156,7 +161,7 @@ export function ProfileView() {
               </div>
 
               <div className="text-center md:text-left mb-4 md:mb-0">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{data?.payload?.displayName}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{me?.payload?.displayName}</h1>
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">197 friends</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-gray-500 dark:text-gray-400">
                   {user.location && (
@@ -269,8 +274,8 @@ export function ProfileView() {
 
             <TabsContent value="posts" className="space-y-6">
               <CreatePost />
-              {mockPosts.length > 0 ? (
-                mockPosts.map((post) => <PostCard key={post.id} post={post} />)
+              {posts?.length > 0 ? (
+                posts?.map((post: PostResponseType) => <PostCard key={post.postId} post={post} />)
               ) : (
                 <Card className="p-8 text-center bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-purple-200 dark:border-purple-700">
                   <p className="text-gray-600 dark:text-gray-400">No posts yet</p>
@@ -301,9 +306,9 @@ export function ProfileView() {
             </TabsContent>
 
             <TabsContent value="likes" className="space-y-6">
-              {mockLikedPosts.map((post) => (
+              {/* {posts.data.map((post) => (
                 <PostCard key={post.id} post={post} />
-              ))}
+              ))} */}
             </TabsContent>
 
             <TabsContent value="about" className="space-y-6">

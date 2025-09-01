@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import useFileUpload from "@/hooks/use-upload";
 
 interface ImageUploadProps {
-    onUploadSuccess: (url: Array<String>) => void;
+    onUploadSuccess: (url: string[]) => void;
     updateStatus: (status: boolean) => void;
     children?: React.ReactNode;
     isUploading: boolean;

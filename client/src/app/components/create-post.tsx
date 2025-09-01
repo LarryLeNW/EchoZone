@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { ImageIcon, Smile, MapPin } from "lucide-react";
+import { ImageIcon, Smile, MapPin, X } from "lucide-react";
 
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
@@ -26,12 +26,13 @@ import { CreatePostRequestSchema, CreatePostRequestType } from "@/schemaValidati
 import { PostVisibility } from "@/constants/post";
 import { handleErrorApi } from "@/lib/utils";
 import ImageUpload from "@/components/upload";
+import ImageMosaic from "@/components/ImageMosaic";
+
 
 export function CreatePost() {
   const createPostMutation = useCreatePostMutation();
   const [open, setOpen] = useState(false);
-  const [imageUrl, setImageUrl] = useState<Array<String> | null>(null);
-  console.log("🚀 ~ CreatePost ~ imageUrl:", imageUrl)
+  const [imageUrl, setImageUrl] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const {
@@ -41,6 +42,7 @@ export function CreatePost() {
     setError,
     reset,
     setValue,
+    watch,
   } = useForm<CreatePostRequestType>({
     resolver: zodResolver(CreatePostRequestSchema),
     defaultValues: {
@@ -54,12 +56,31 @@ export function CreatePost() {
     },
   });
 
+  React.useEffect(() => {
+    if (imageUrl.length > 0) {
+      setValue("mediaJson", JSON.stringify(imageUrl), { shouldValidate: true });
+    } else {
+      setValue("mediaJson", null, { shouldValidate: true });
+    }
+  }, [imageUrl, setValue]);
+
+  const removeImage = (idx: number) => {
+    setImageUrl(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const onSubmit = async (values: CreatePostRequestType) => {
     try {
-      await createPostMutation.mutateAsync(values);
+      const payload: CreatePostRequestType = {
+        ...values,
+        mediaJson: imageUrl.length ? JSON.stringify({
+          image: imageUrl
+        }) : null,
+      };
+
+      await createPostMutation.mutateAsync(payload);
       toast.success("Đăng bài viết thành công!");
       reset();
-      setImageUrl(null);
+      setImageUrl([]);
       setOpen(false);
     } catch (error) {
       handleErrorApi({ error, setError });
@@ -79,17 +100,17 @@ export function CreatePost() {
             <DialogTrigger asChild>
               <button
                 type="button"
-                className="flex-1 text-left rounded-full border px-4  text-sm
-                             border-purple-200 dark:border-purple-700
-                             bg-purple-50/50 dark:bg-gray-700/50
-                             text-gray-600 dark:text-gray-300 hover:bg-purple-100/60
-                             transition"
+                className="flex-1 text-left rounded-full border px-4 text-sm
+                           border-purple-200 dark:border-purple-700
+                           bg-purple-50/50 dark:bg-gray-700/50
+                           text-gray-600 dark:text-gray-300 hover:bg-purple-100/60
+                           transition"
               >
                 Bạn đang nghĩ gì?
               </button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg lg:h-[400px] overflow-y-auto overflow-x-hidden">
               <DialogHeader>
                 <DialogTitle>Tạo bài viết</DialogTitle>
               </DialogHeader>
@@ -114,45 +135,36 @@ export function CreatePost() {
                 />
 
                 <div className="rounded-md border p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Thêm vào bài viết của bạn</span>
+                  <div className="flex items-center justify-end">
                     <div className="flex items-center gap-2">
                       <ImageUpload
-                        updateStatus={(status) => {
-                          setIsUploading(status)
-                        }}
-                        onUploadSuccess={(urls) => {
-                          setImageUrl(urls);
+                        updateStatus={(status) => setIsUploading(status)}
+                        onUploadSuccess={(urls: string[]) => {
+                          setImageUrl((prev) => [...prev, ...urls]);
                         }}
                         isUploading={isUploading}
                       >
-                        <Button type="button" variant="ghost" size="sm" className="gap-2">
+                        <Button type="button" variant="ghost" size="sm" className="gap-2" disabled={isUploading}>
                           <ImageIcon className="w-5 h-5" />
-                          Ảnh
+                          {isUploading ? "Đang tải..." : "Ảnh"}
                         </Button>
                       </ImageUpload>
 
-                      <Button type="button" variant="ghost" size="sm" className="gap-2">
+                      <Button type="button" variant="ghost" size="sm" className="gap-2" onClick={() => toast.info("Đang phát triển")}>
                         <Smile className="w-5 h-5" />
                         Cảm xúc
                       </Button>
 
-                      <Button type="button" variant="ghost" size="sm" className="gap-2">
+                      <Button type="button" variant="ghost" size="sm" className="gap-2" onClick={() => toast.info("Đang phát triển")}>
                         <MapPin className="w-5 h-5" />
                         Vị trí
                       </Button>
                     </div>
                   </div>
 
-                  {/* {imageUrl && (
-                    <div className="mt-3">
-                      <img
-                        src={imageUrl}
-                        alt="preview"
-                        className="max-h-64 w-full rounded-md object-cover border"
-                      />
-                    </div>
-                  )} */}
+                  {imageUrl.length > 0 && (
+                    <ImageMosaic images={imageUrl} onRemove={removeImage} />
+                  )}
                 </div>
 
                 {Object.entries(errors).length > 0 && (
@@ -169,12 +181,8 @@ export function CreatePost() {
                       Hủy
                     </Button>
                   </DialogClose>
-                  <Button type="submit" disabled={isSubmitting} className="min-w-24 bg-primary">
-                    {isSubmitting ? (
-                      <AiOutlineLoading3Quarters className="animate-spin" />
-                    ) : (
-                      "Đăng"
-                    )}
+                  <Button type="submit" disabled={isSubmitting || isUploading} className="min-w-24 bg-purple-800">
+                    {isSubmitting ? <AiOutlineLoading3Quarters className="animate-spin" /> : "Đăng"}
                   </Button>
                 </DialogFooter>
               </form>

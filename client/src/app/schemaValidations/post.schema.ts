@@ -40,13 +40,24 @@ export const PostResponseSchema = z.object({
     authorId: z.string().uuid(),
     body: z.string().nullable(),
     mediaJson: z.string().nullable(),
-    visibility: z.number(),
+    visibility: z.number().int(),
     allowComments: z.boolean(),
     allowReactions: z.boolean(),
     createdAt: z.string(),
     updatedAt: z.string().nullable(),
-    commentCount: z.number(),
-    reactionCount: z.number()
+    commentCount: z.number().int(),
+    reactionCount: z.number().int(),
+    authorDisplayName: z.string().nullable(),
+    authorHandle: z.string().nullable(),
+    authorAvatarUrl: z.string().nullable(),
+});
+export type PostResponseType = z.TypeOf<typeof PostResponseSchema>
+
+
+export const GetPostsQueryParams = z.object({
+    authorId: z.string().optional(),
+    page: z.number().optional(),
+    pageSize: z.number().optional()
 })
 
-export type PostResponseType = z.TypeOf<typeof PostResponseSchema>
+export type GetPostsQueryParamsType = z.TypeOf<typeof GetPostsQueryParams>
