@@ -1,4 +1,5 @@
 using EmployeeApi.Contracts;
+using EmployeeApi.DTOs;
 using EmployeeApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,12 +34,20 @@ public class PostsController(IPostService posts) : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> List([FromQuery] Guid? authorId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    public async Task<IActionResult> List(
+     [FromQuery] Guid? authorId,
+     [FromQuery] PagingQuery query,
+     CancellationToken ct = default)
     {
         var viewer = User.GetUserId();
-        var (err, list) = await posts.ListAsync(viewer, authorId, page, pageSize, ct);
-        return err == ServiceError.None ? Ok(list) : this.FromError(err);
+
+        var (err, result) = await posts.ListAsync(viewer, authorId, query, ct);
+
+        return err == ServiceError.None
+            ? Ok(result)
+            : this.FromError(err);
     }
+
 
     [HttpPatch("{id:guid}")]
     [Authorize]

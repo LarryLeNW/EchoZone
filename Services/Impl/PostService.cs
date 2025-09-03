@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using EmployeeApi.Contracts;
 using EmployeeApi.Domain;
+using EmployeeApi.DTOs;
 using EmployeeApi.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -78,23 +79,61 @@ public class PostService(AppDbContext db, IPostAccessService access) : IPostServ
         return (ServiceError.None, dto);
     }
 
-    public async Task<(ServiceError error, IEnumerable<PostResponse> data)> ListAsync(Guid? viewerId, Guid? authorId, int page, int pageSize, CancellationToken ct)
+    public async Task<(ServiceError error, PagedResult<PostResponse>? data)> ListAsync(
+        Guid? viewerId,
+        Guid? authorId,
+        PagingQuery query,
+        CancellationToken ct)
     {
-        page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 50);
+        var page = query.Page <= 0 ? 1 : query.Page;
+        var pageSize = query.PageSize;
 
         IQueryable<Post> q = db.Posts.AsNoTracking();
-        if (authorId.HasValue) q = q.Where(p => p.AuthorId == authorId);
 
-        q = access.ApplyVisibility(q, viewerId).OrderByDescending(p => p.CreatedAt);
+        if (authorId.HasValue)
+            q = q.Where(p => p.AuthorId == authorId);
+
+        q = access.ApplyVisibility(q, viewerId);
+
+        if (!string.IsNullOrEmpty(query.SortBy))
+        {
+            var sortBy = query.SortBy.ToLower();
+            var sortDir = (query.SortDir ?? "asc").ToLower();
+
+            q = sortBy switch
+            {
+                "createdat" => sortDir == "desc"
+                    ? q.OrderByDescending(p => p.CreatedAt)
+                    : q.OrderBy(p => p.CreatedAt),
+
+                "updatedat" => sortDir == "desc"
+                    ? q.OrderByDescending(p => p.UpdatedAt)
+                    : q.OrderBy(p => p.UpdatedAt),
+
+                _ => q.OrderByDescending(p => p.CreatedAt)
+            };
+        }
+        else
+        {
+            q = q.OrderByDescending(p => p.CreatedAt);
+        }
+
+        var totalItems = await q.CountAsync(ct);
 
         var items = await ProjectToDto(
-                        q.Skip((page - 1) * pageSize).Take(pageSize)
-                   ).ToListAsync(ct);
+            q.Skip((page - 1) * pageSize).Take(pageSize)
+        ).ToListAsync(ct);
 
-        return (ServiceError.None, items);
+        var result = new PagedResult<PostResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = totalItems
+        };
+
+        return (ServiceError.None, result);
     }
-
 
     public async Task<ServiceError> UpdateAsync(Guid userId, Guid postId, UpdatePostRequest req, CancellationToken ct)
     {

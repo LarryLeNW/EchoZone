@@ -18,5 +18,9 @@ public class ProfileRepository(AppDbContext db) : IProfileRepository
         await db.SaveChangesAsync(ct);
     }
 
-    public void Update(Profile profile) => db.Profiles.Update(profile);
+    public async Task UpdateAsync(Profile profile, CancellationToken ct = default)
+    {
+        db.Profiles.Update(profile);
+        await db.SaveChangesAsync(ct);
+    }
 }

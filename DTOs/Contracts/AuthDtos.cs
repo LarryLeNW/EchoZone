@@ -21,9 +21,10 @@ public record ProfileResponse(
     bool IsPrivate
 );
 
-public record UpdateProfileRequest(
-    string DisplayName,
-    string? Bio,
-    string? AvatarUrl,
-    bool? IsPrivate
-);
+public class UpdateProfileRequest
+{
+    public string? DisplayName { get; set; }
+    public string? Bio { get; set; }
+    public string? AvatarUrl { get; set; }
+    public bool? IsPrivate { get; set; }
+}

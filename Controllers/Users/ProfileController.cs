@@ -3,7 +3,6 @@ using EmployeeApi.Domain;
 using EmployeeApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace EmployeeApi.Controllers;
@@ -26,11 +25,11 @@ public class ProfileController(IProfileService service) : ControllerBase
     [HttpPut("me")]
     public async Task<IActionResult> Update([FromBody] UpdateProfileRequest req, CancellationToken ct)
     {
-        var sub = User.FindFirstValue("sub");
+        var sub = User.FindFirstValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
         if (sub is null) return Unauthorized();
         var uid = Guid.Parse(sub);
-
         await service.UpdateMeAsync(uid, req, ct);
         return NoContent();
     }
+
 }

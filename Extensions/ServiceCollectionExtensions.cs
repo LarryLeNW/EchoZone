@@ -1,5 +1,6 @@
 using EmployeeApi.Services;
 using EmployeeApi.Repositories;
+using EmployeeApi.Services.Impl;
 
 namespace EmployeeApi.Extensions
 {
@@ -18,6 +19,7 @@ namespace EmployeeApi.Extensions
             services.AddScoped<IPostAccessService, PostAccessService>();
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IFriendService, FriendService>();
             services.AddHttpContextAccessor();
             return services;
         }

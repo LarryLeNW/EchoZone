@@ -1,6 +1,7 @@
 using AutoMapper;
 using EmployeeApi.Contracts;
 using EmployeeApi.Repositories;
+using Microsoft.IdentityModel.Tokens;
 
 namespace EmployeeApi.Services;
 
@@ -15,11 +16,10 @@ public class ProfileService(IProfileRepository repo, AutoMapper.IMapper mapper) 
     public async Task UpdateMeAsync(Guid userId, UpdateProfileRequest req, CancellationToken ct = default)
     {
         var p = await repo.GetByUserIdAsync(userId, ct) ?? throw new KeyNotFoundException("Profile không tồn tại");
-        p.DisplayName = req.DisplayName;
-        p.Bio = req.Bio;
-        p.AvatarUrl = req.AvatarUrl;
+        if (req.DisplayName != null) p.DisplayName = req.DisplayName;
+        if (req.Bio != null) p.Bio = req.Bio;
+        if (req.AvatarUrl != null) p.AvatarUrl = req.AvatarUrl;
         if (req.IsPrivate.HasValue) p.IsPrivate = req.IsPrivate.Value;
-        repo.Update(p);
-        await Task.CompletedTask;
+        await repo.UpdateAsync(p, ct);
     }
 }
