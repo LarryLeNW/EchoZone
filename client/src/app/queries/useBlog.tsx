@@ -1,7 +1,8 @@
 // queries/useBlog.ts
+import { PagedResult } from "@/@types";
 import postApiRequest from "@/apiRequests/post";
 import { CreatePostRequestType, GetPostsQueryParamsType, PostResponseType } from "@/schemaValidations/post.schema";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const POST_KEYS = {
     all: ["posts"] as const,
@@ -20,13 +21,23 @@ export const useCreatePostMutation = (paramsToRefetch?: GetPostsQueryParamsType)
     });
 };
 
-export const useGetPostListQuery = (params?: GetPostsQueryParamsType, options?: { enabled?: boolean }) => {
-    return useQuery({
+export const usePostListInfinite = (
+    params?: GetPostsQueryParamsType,
+    options?: { enabled?: boolean }
+) => {
+    return useInfiniteQuery<PagedResult<PostResponseType>, Error>({
         queryKey: POST_KEYS.list(params),
-        queryFn: () => postApiRequest.getPostList(params),
-        placeholderData: (prev) => prev,
-        staleTime: 30_000,
+        queryFn: async ({ pageParam }) => {
+            const res = await postApiRequest.getPostList({
+                ...params,
+                page: pageParam as number,
+            });
+            if (!res.payload) throw new Error("No payload");
+            return res.payload;
+        },
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) =>
+            lastPage.hasNext ? lastPage.page + 1 : undefined,
         enabled: options?.enabled ?? true,
-        select: (data): PostResponseType[] => data.payload,
     });
 };

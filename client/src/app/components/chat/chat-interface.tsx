@@ -223,8 +223,8 @@ export function ChatInterface() {
                 size="sm"
                 onClick={() => setActiveTab(tab)}
                 className={`text-sm px-3 py-1 rounded-full ${activeTab === tab
-                    ? "bg-purple-600 text-white hover:bg-purple-700"
-                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  ? "bg-purple-600 text-white hover:bg-purple-700"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
               >
                 {tab}
@@ -350,8 +350,8 @@ export function ChatInterface() {
                 )}
                 <div
                   className={`max-w-xs lg:max-w-md px-3 py-2 rounded-2xl ${message.isOwn
-                      ? "bg-purple-600 text-white"
-                      : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600"
+                    ? "bg-purple-600 text-white"
+                    : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600"
                     }`}
                 >
                   <p className="text-sm">{message.content}</p>

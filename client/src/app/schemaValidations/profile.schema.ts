@@ -18,3 +18,13 @@ export const ProfileRes = z
   .strict()
 
 export type ProfileResType = z.TypeOf<typeof ProfileSchema>
+
+
+export const UpdateProfileSchema = z.object({
+  displayName: z.string().optional(),
+  bio: z.string().optional(),
+  avatarUrl: z.string().optional(),
+  isPrivate: z.string().optional()
+})
+
+export type UpdateProfileType = z.TypeOf<typeof UpdateProfileSchema>

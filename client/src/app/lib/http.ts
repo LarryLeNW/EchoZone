@@ -104,11 +104,17 @@ const request = async <Response>(
         method,
         credentials: 'include'
     })
-    const payload: Response = await res.json()
+    let payload: Response | null = null
+
+    if (res.status !== 204) {
+        payload = await res.json()
+    }
+
     const data = {
         status: res.status,
         payload
     }
+
     if (!res.ok) {
         if (res.status === ENTITY_ERROR_STATUS) {
             throw new EntityError(

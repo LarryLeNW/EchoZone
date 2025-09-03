@@ -7,98 +7,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { PostCard } from "../post-card"
 import { MapPin, Calendar, LinkIcon, Camera, Edit3, Settings, MoreHorizontal, Heart } from "lucide-react"
-import { useProfileMe } from "@/queries/useProfile"
+import { useProfileMe, useUpdateMeMutation } from "@/queries/useProfile"
 import { CreatePost } from "@/components/create-post"
-import { useGetPostListQuery } from "@/queries/useBlog"
+// import { useGetPostListQuery } from "@/queries/useBlog"
 import { PostResponseType } from "@/schemaValidations/post.schema"
+import ImageUpload from "@/components/upload"
+import { toast } from "sonner"
+import { handleErrorApi } from "@/lib/utils"
+import { UpdateProfileType } from "@/schemaValidations/profile.schema"
+import { useQueryClient } from "@tanstack/react-query"
+import { PostList } from "@/components/posts/post-list"
 
-interface User {
-  id: string
-  name: string
-  username: string
-  bio: string
-  avatar: string
-  coverImage: string
-  location?: string
-  website?: string
-  joinDate?: string
-  followers: number
-  following: number
-  posts: number
-  isOwnProfile?: boolean,
-  displayName: string
-}
-
-interface ProfileViewProps {
-  user: User
-}
-
-// Mock posts data
-const mockPosts = [
-  {
-    id: 1,
-    user: {
-      name: "Nguyễn Văn A",
-      username: "@nguyenvana",
-      avatar: "/diverse-profile-avatars.png",
-    },
-    content: "Vừa hoàn thành dự án web app mới! Cảm ơn team đã support nhiệt tình 🚀 #coding #teamwork",
-    image: "/mobile-app-mockup.png",
-    likes: 234,
-    comments: 45,
-    shares: 12,
-    timestamp: "2h",
-  },
-  {
-    id: 2,
-    user: {
-      name: "Nguyễn Văn A",
-      username: "@nguyenvana",
-      avatar: "/diverse-profile-avatars.png",
-    },
-    content: "Buổi sáng năng suất với coffee và code! ☕️💻 Đang làm những tính năng thú vị cho dự án mới.",
-    likes: 156,
-    comments: 23,
-    shares: 8,
-    timestamp: "1d",
-  },
-  {
-    id: 3,
-    user: {
-      name: "Nguyễn Văn A",
-      username: "@nguyenvana",
-      avatar: "/diverse-profile-avatars.png",
-    },
-    content: "Chia sẻ một số tips về React hooks mà mình học được tuần này. Ai quan tâm thì comment nhé! 📚",
-    likes: 89,
-    comments: 34,
-    shares: 15,
-    timestamp: "3d",
-  },
-]
 
 const mockMediaPosts = [
   { id: 1, image: "/mobile-app-mockup.png", likes: 234 },
   { id: 2, image: "/professional-headshot.png", likes: 156 },
   { id: 3, image: "/placeholder-573u4.png", likes: 89 },
   { id: 4, image: "/young-asian-person.png", likes: 67 },
-]
-
-const mockLikedPosts = [
-  {
-    id: 4,
-    user: {
-      name: "Sarah Chen",
-      username: "@sarahchen",
-      avatar: "/young-asian-person.png",
-    },
-    content: "Amazing sunset today! Nature never fails to inspire my designs 🌅✨",
-    image: "/placeholder-8svwp.png",
-    likes: 445,
-    comments: 67,
-    shares: 23,
-    timestamp: "5h",
-  },
 ]
 
 const user = {
@@ -118,20 +43,41 @@ const user = {
 }
 
 export function ProfileView() {
+  const queryClient = useQueryClient();
   const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState("posts")
   const { data: me } = useProfileMe();
-  const authorId = me?.payload?.userId as string | undefined;
-  const { data: posts = [], isLoading, isError } = useGetPostListQuery(
-    { authorId },
-    { enabled: !!authorId }
-  );
+  const [isUploadAvatar, setIsUploadAvatar] = useState<boolean>(false);
+  const updateMeMutation = useUpdateMeMutation();
+
+
+  const handleUpdateAvatar = async (avatarUrl: string) => {
+    if (!avatarUrl) return;
+    try {
+      const payload: UpdateProfileType = {
+        avatarUrl
+      };
+
+      await updateMeMutation.mutateAsync(payload);
+      queryClient.setQueryData(['profile-me'], (oldData: any) => ({
+        ...oldData,
+        payload: {
+          ...oldData?.payload,
+          avatarUrl
+        }
+      }));
+      toast.success("Cập nhật avatar thành công !");
+    } catch (error) {
+      toast.warning("Vui lòng thử lại!");
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="max-w-4xl mx-auto">
         <div className="relative h-64 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-b-2xl overflow-hidden">
-          <img src={user.coverImage || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
+          <img src={me?.payload?.avatarUrl || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/30"></div>
 
           {user.isOwnProfile && (
@@ -147,16 +93,24 @@ export function ProfileView() {
             <div className="flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-6">
               <div className="relative">
                 <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-800 shadow-xl">
-                  <AvatarImage src={"/placeholder.svg"} />
+                  <AvatarImage src={me?.payload?.avatarUrl || "/placeholder.svg"} />
                   <AvatarFallback className="bg-purple-600 text-white text-2xl">{me?.payload?.displayName}</AvatarFallback>
                 </Avatar>
                 {user.isOwnProfile && (
-                  <Button
-                    size="sm"
-                    className="absolute bottom-2 right-2 w-8 h-8 p-0 rounded-full bg-purple-600 hover:bg-purple-700"
+                  <ImageUpload
+                    updateStatus={(status) => setIsUploadAvatar(status)}
+                    onUploadSuccess={(urls: string[]) => {
+                      handleUpdateAvatar(urls[0])
+                    }}
+                    isUploading={isUploadAvatar}
                   >
-                    <Camera className="w-4 h-4" />
-                  </Button>
+                    <Button
+                      size="sm"
+                      className="absolute bottom-2 right-2 w-8 h-8 p-0 rounded-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </Button>
+                  </ImageUpload>
                 )}
               </div>
 
@@ -274,13 +228,7 @@ export function ProfileView() {
 
             <TabsContent value="posts" className="space-y-6">
               <CreatePost />
-              {posts?.length > 0 ? (
-                posts?.map((post: PostResponseType) => <PostCard key={post.postId} post={post} />)
-              ) : (
-                <Card className="p-8 text-center bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-purple-200 dark:border-purple-700">
-                  <p className="text-gray-600 dark:text-gray-400">No posts yet</p>
-                </Card>
-              )}
+              <PostList />
             </TabsContent>
 
             <TabsContent value="media" className="space-y-6">

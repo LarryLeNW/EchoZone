@@ -170,7 +170,6 @@ export function PostCard({ post }: PostCardProps) {
   return (
     <Card className="overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
       <CardContent className="p-0">
-        {/* Header */}
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={onClickUser}>
             <Avatar className="w-10 h-10">
@@ -240,7 +239,6 @@ export function PostCard({ post }: PostCardProps) {
           </Button>
         </div>
 
-        {/* Comments */}
         {showComments && (
           <div className="pt-2">
             <div className="px-4 py-3 max-h-96 overflow-y-auto">

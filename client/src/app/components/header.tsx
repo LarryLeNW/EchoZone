@@ -22,15 +22,14 @@ import { useProfileMe } from "@/queries/useProfile"
 
 export function Header() {
   const router = useRouter()
-  const { data, isError, isLoading } = useProfileMe()
+  const { data: me, isError, isLoading } = useProfileMe()
   const [showNotifications, setShowNotifications] = useState(false)
   const logoutMutation = useLogoutMutation()
-
   useEffect(() => {
-    if (!isLoading && (!data || isError)) {
+    if (!isLoading && (!me || isError)) {
       router.push("/login")
     }
-  }, [data, isError, isLoading, router])
+  }, [me, isError, isLoading, router])
 
 
   const disconnectSocket = useAppStore((state) => state.disconnectSocket)
@@ -177,52 +176,56 @@ export function Header() {
               </DropdownMenu>
               <ThemeToggle />
             </nav>
+            {
+              me && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="w-8 h-8 border-2 border-purple-300 cursor-pointer hover:border-purple-400 transition-colors">
+                      <AvatarImage src={me?.payload?.avatarUrl || "/placeholder.svg"} />
+                      <AvatarFallback className="bg-purple-600 text-white">U</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none text-center">{me.payload?.displayName}</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile/me" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Trang cá nhân</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookmarks" className="cursor-pointer">
+                        <Bookmark className="mr-2 h-4 w-4" />
+                        <span>Đã lưu</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings" className="cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Cài đặt</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/help" className="cursor-pointer">
+                        <HelpCircle className="mr-2 h-4 w-4" />
+                        <span>Trợ giúp</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer text-red-600" onClick={logout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Đăng xuất</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )
+            }
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="w-8 h-8 border-2 border-purple-300 cursor-pointer hover:border-purple-400 transition-colors">
-                  <AvatarImage src="/diverse-profile-avatars.png" />
-                  <AvatarFallback className="bg-purple-600 text-white">U</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none text-center">{data?.payload.displayName}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile/me" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Trang cá nhân</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/bookmarks" className="cursor-pointer">
-                    <Bookmark className="mr-2 h-4 w-4" />
-                    <span>Đã lưu</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Cài đặt</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/help" className="cursor-pointer">
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Trợ giúp</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer text-red-600" onClick={logout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Đăng xuất</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </div>

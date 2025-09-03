@@ -28,7 +28,6 @@ import { handleErrorApi } from "@/lib/utils";
 import ImageUpload from "@/components/upload";
 import ImageMosaic from "@/components/ImageMosaic";
 
-
 export function CreatePost() {
   const createPostMutation = useCreatePostMutation();
   const [open, setOpen] = useState(false);
