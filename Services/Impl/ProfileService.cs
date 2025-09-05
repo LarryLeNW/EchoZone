@@ -22,4 +22,10 @@ public class ProfileService(IProfileRepository repo, AutoMapper.IMapper mapper) 
         if (req.IsPrivate.HasValue) p.IsPrivate = req.IsPrivate.Value;
         await repo.UpdateAsync(p, ct);
     }
+
+    public async Task<ProfileResponse?> GetByHandleAsync(string handle, CancellationToken ct)
+    {
+        var p = await repo.GetByHandle(handle, ct);
+        return p is null ? null : mapper.Map<ProfileResponse>(p);
+    }
 }

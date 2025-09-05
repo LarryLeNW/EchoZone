@@ -23,4 +23,7 @@ public class ProfileRepository(AppDbContext db) : IProfileRepository
         db.Profiles.Update(profile);
         await db.SaveChangesAsync(ct);
     }
+
+    public Task<Profile?> GetByHandle(string handle, CancellationToken ct = default) =>
+        db.Profiles.FirstOrDefaultAsync(p => p.Handle == handle, ct);
 }

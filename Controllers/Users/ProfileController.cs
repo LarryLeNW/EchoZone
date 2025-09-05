@@ -32,4 +32,12 @@ public class ProfileController(IProfileService service) : ControllerBase
         return NoContent();
     }
 
+
+    [HttpGet("{handle}")]
+    public async Task<IActionResult> GetByHandle([FromRoute] string handle, CancellationToken ct)
+    {
+        var profile = await service.GetByHandleAsync(handle, ct);
+        return profile is null ? NotFound() : Ok(profile);
+    }
+
 }

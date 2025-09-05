@@ -16,6 +16,16 @@ public enum AudienceMode : byte { Allow = 1, Deny = 2 }
 public enum ReactionType : byte { Like = 1, Love = 2, Haha = 3, Wow = 4, Sad = 5, Angry = 6, Care = 7 }
 public enum FollowStatus : byte { Pending = 0, Accepted = 1, Declined = 2 }
 
+public enum NotificationType : byte
+{
+    Like = 1,
+    Comment = 2,
+    Mention = 3,
+    FriendRequest = 4,
+    Message = 5,
+}
+
+
 [Table("Users", Schema = "Auth")]
 public class User
 {
@@ -397,4 +407,28 @@ public class ConversationRole
     [MaxLength(50)] public string Name { get; set; } = default!; // "Admin","Member"...
     // permissions: {"send":true,"pin":true,"invite":true,"kick":false,"enableAnon":true}
     [Required] public string PermissionsJson { get; set; } = "{\"send\":true}";
+}
+
+[Table("Notifications", Schema = "People")]
+public class Notification
+{
+    [Key] public Guid NotificationId { get; set; }
+
+    [Required] public Guid UserId { get; set; }
+
+    [Required] public Guid ActorId { get; set; }
+    [Required] public NotificationType Type { get; set; }
+
+    [Required] public Guid ObjectId { get; set; }
+    [Required, MaxLength(30)] public string ObjectType { get; set; }
+
+    [MaxLength(400)] public string? DataJson { get; set; }
+
+    public bool IsRead { get; set; } = false;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(100)] public string? GroupKey { get; set; }
+
+    public User? User { get; set; }
+    public User? Actor { get; set; }
 }
