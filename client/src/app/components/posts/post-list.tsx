@@ -5,11 +5,9 @@ import { usePostListInfinite } from "@/queries/useBlog"
 import { useProfileMe } from "@/queries/useProfile";
 import { usePathname } from "next/navigation";
 
-export function PostList() {
+export function PostList({ authorId }: { authorId?: number | null }) {
     const pathname = usePathname()
-    const { data: me } = useProfileMe()
-    const authorId = me?.payload?.userId as string | undefined
-    const isMePage = pathname.split("/").filter(Boolean).pop() === "me"
+    // const isMePage = pathname.split("/").filter(Boolean).pop() === "me"
 
     const {
         data,
@@ -17,7 +15,7 @@ export function PostList() {
         hasNextPage,
         isFetchingNextPage,
         status,
-    } = usePostListInfinite(isMePage && authorId ? { authorId } : undefined)
+    } = usePostListInfinite(true && authorId ? { authorId } : undefined)
 
     const loaderRef = useRef<HTMLDivElement | null>(null)
 
@@ -55,13 +53,8 @@ export function PostList() {
             )}
 
             <div ref={loaderRef} className="flex justify-center py-4">
-                {isFetchingNextPage ? (
-                    <p>Đang tải thêm...</p>
-                ) : hasNextPage ? (
-                    <p>Kéo xuống để xem thêm</p>
-                ) : (
-                    <p>Hết bài viết</p>
-                )}
+                {isFetchingNextPage &&
+                    <p>Đang tải thêm...</p>}
             </div>
         </div>
     )

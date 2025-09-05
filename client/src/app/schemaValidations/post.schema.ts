@@ -55,7 +55,7 @@ export type PostResponseType = z.TypeOf<typeof PostResponseSchema>
 
 
 export const GetPostsQueryParams = z.object({
-    authorId: z.string().optional(),
+    authorId: z.number().optional(),
     page: z.number().optional(),
     pageSize: z.number().optional()
 })

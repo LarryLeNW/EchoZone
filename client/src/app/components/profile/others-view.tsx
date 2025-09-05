@@ -7,15 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { PostCard } from "../post-card"
 import { MapPin, Calendar, LinkIcon, Camera, Edit3, Settings, MoreHorizontal, Heart } from "lucide-react"
-import { useProfileMe, useUpdateMeMutation } from "@/queries/useProfile"
+import { useGetOthersProfile, useProfileMe, useUpdateMeMutation } from "@/queries/useProfile"
 import { CreatePost } from "@/components/create-post"
-// import { useGetPostListQuery } from "@/queries/useBlog"
-import { PostResponseType } from "@/schemaValidations/post.schema"
-import ImageUpload from "@/components/upload"
-import { toast } from "sonner"
-import { handleErrorApi } from "@/lib/utils"
-import { UpdateProfileType } from "@/schemaValidations/profile.schema"
-import { useQueryClient } from "@tanstack/react-query"
 import { PostList } from "@/components/posts/post-list"
 
 
@@ -42,50 +35,20 @@ const user = {
   isOwnProfile: true,
 }
 
-export function ProfileView() {
-  const queryClient = useQueryClient();
+
+type OtherProfileProps = { handle: string }
+
+export function OtherProfile({ handle }: OtherProfileProps) {
   const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState("posts")
-  const { data: me } = useProfileMe();
-  const [isUploadAvatar, setIsUploadAvatar] = useState<boolean>(false);
-  const updateMeMutation = useUpdateMeMutation();
-
-
-  const handleUpdateAvatar = async (avatarUrl: string) => {
-    if (!avatarUrl) return;
-    try {
-      const payload: UpdateProfileType = {
-        avatarUrl
-      };
-
-      await updateMeMutation.mutateAsync(payload);
-      queryClient.setQueryData(['profile-me'], (oldData: any) => ({
-        ...oldData,
-        payload: {
-          ...oldData?.payload,
-          avatarUrl
-        }
-      }));
-      toast.success("Cập nhật avatar thành công !");
-    } catch (error) {
-      toast.warning("Vui lòng thử lại!");
-    }
-  };
-
+  const { data: user } = useGetOthersProfile(handle);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="max-w-4xl mx-auto">
         <div className="relative h-64 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-b-2xl overflow-hidden">
-          <img src={me?.payload?.avatarUrl || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
+          <img src={user?.payload?.avatarUrl || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/30"></div>
-
-          {user.isOwnProfile && (
-            <Button size="sm" className="absolute bottom-4 right-4 bg-black/50 hover:bg-black/70 text-white border-0">
-              <Camera className="w-4 h-4 mr-2" />
-              Edit Cover
-            </Button>
-          )}
         </div>
 
         <div className="relative px-6 pb-6">
@@ -93,32 +56,16 @@ export function ProfileView() {
             <div className="flex flex-col md:flex-row md:items-end space-y-4 md:space-y-0 md:space-x-6">
               <div className="relative">
                 <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-800 shadow-xl">
-                  <AvatarImage src={me?.payload?.avatarUrl || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-purple-600 text-white text-2xl">{me?.payload?.displayName}</AvatarFallback>
+                  <AvatarImage src={user?.payload?.avatarUrl || "/placeholder.svg"} />
+                  <AvatarFallback className="bg-purple-600 text-white text-2xl">{user?.payload?.displayName}</AvatarFallback>
                 </Avatar>
-                {user.isOwnProfile && (
-                  <ImageUpload
-                    updateStatus={(status) => setIsUploadAvatar(status)}
-                    onUploadSuccess={(urls: string[]) => {
-                      handleUpdateAvatar(urls[0])
-                    }}
-                    isUploading={isUploadAvatar}
-                  >
-                    <Button
-                      size="sm"
-                      className="absolute bottom-2 right-2 w-8 h-8 p-0 rounded-full bg-purple-600 hover:bg-purple-700"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </Button>
-                  </ImageUpload>
-                )}
               </div>
 
               <div className="text-center md:text-left mb-4 md:mb-0">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{me?.payload?.displayName}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{user?.payload?.displayName}</h1>
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">197 friends</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-gray-500 dark:text-gray-400">
-                  {user.location && (
+                  {/* {user.location && (
                     <div className="flex items-center space-x-1">
                       <MapPin className="w-4 h-4" />
                       <span>{user.location}</span>
@@ -137,73 +84,52 @@ export function ProfileView() {
                         {user.website}
                       </span>
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>
 
             <div className="flex justify-center md:justify-end space-x-3">
-              {user.isOwnProfile ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className="px-6 py-2 rounded-full font-semibold border-purple-200 dark:border-purple-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 bg-transparent"
-                  >
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="px-4 py-2 rounded-full border-gray-200 dark:border-gray-700 bg-transparent"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    onClick={() => setIsFollowing(!isFollowing)}
-                    className={`px-8 py-2 rounded-full font-semibold transition-all duration-300 ${isFollowing
-                      ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                      : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
-                      }`}
-                  >
-                    {isFollowing ? "Following" : "Follow"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="px-6 py-2 rounded-full font-semibold border-purple-200 dark:border-purple-700 text-purple-600 dark:text-purple-400 bg-transparent"
-                  >
-                    Message
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="px-4 py-2 rounded-full border-gray-200 dark:border-gray-700 bg-transparent"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </>
-              )}
+              <Button
+                onClick={() => setIsFollowing(!isFollowing)}
+                className={`px-8 py-2 rounded-full font-semibold transition-all duration-300 ${isFollowing
+                  ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                  : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700"
+                  }`}
+              >
+                {isFollowing ? "Following" : "Follow"}
+              </Button>
+              <Button
+                variant="outline"
+                className="px-6 py-2 rounded-full font-semibold border-purple-200 dark:border-purple-700 text-purple-600 dark:text-purple-400 bg-transparent"
+              >
+                Message
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="px-4 py-2 rounded-full border-gray-200 dark:border-gray-700 bg-transparent"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
             </div>
           </div>
 
           <div className="mt-6">
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl">{user.bio}</p>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl">{user?.payload?.bio}</p>
           </div>
 
           <div className="flex justify-center md:justify-start space-x-8 mt-6">
             <div className="text-center cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 px-4 py-2 rounded-lg transition-colors">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.posts}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{232}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
             </div>
             <div className="text-center cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 px-4 py-2 rounded-lg transition-colors">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.followers.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{2323}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Followers</div>
             </div>
             <div className="text-center cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 px-4 py-2 rounded-lg transition-colors">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.following}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{23123}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Following</div>
             </div>
           </div>
@@ -227,8 +153,7 @@ export function ProfileView() {
             </TabsList>
 
             <TabsContent value="posts" className="space-y-6">
-              <CreatePost />
-              <PostList authorId={me?.payload?.userId} />
+              <PostList authorId={user?.payload?.userId}/>
             </TabsContent>
 
             <TabsContent value="media" className="space-y-6">
@@ -265,10 +190,10 @@ export function ProfileView() {
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white mb-2">Bio</h4>
-                    <p className="text-gray-700 dark:text-gray-300">{user.bio}</p>
+                    {/* <p className="text-gray-700 dark:text-gray-300">{user.bio}</p> */}
                   </div>
 
-                  {user.location && (
+                  {/* {user.location && (
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white mb-2">Location</h4>
                       <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
@@ -301,7 +226,7 @@ export function ProfileView() {
                         <span>{user.joinDate}</span>
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               </Card>
             </TabsContent>

@@ -130,7 +130,6 @@ function ImageCollage({ images }: { images: string[] }) {
 
 export function PostCard({ post }: PostCardProps) {
   const router = useRouter()
-
   const images = useMemo(() => parseMediaJson(post.mediaJson), [post.mediaJson])
   const [isLiked, setIsLiked] = useState(false)
   const [likesCount, setLikesCount] = useState<number>(post.reactionCount ?? 0)
@@ -157,7 +156,7 @@ export function PostCard({ post }: PostCardProps) {
   }
 
   const onClickUser = () => {
-    router.push(`/profile/${post.authorId}`)
+    router.push(`/profile/${post.authorHandle}`)
   }
 
   const authorName = post.authorDisplayName ?? "Unknown"
@@ -187,7 +186,7 @@ export function PostCard({ post }: PostCardProps) {
         </div>
 
         {post.body && (
-          <div className="px-8 pb-3">
+          <div className="px-6 pb-3">
             <p className="text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-line">
               {post.body}
             </p>
@@ -195,7 +194,7 @@ export function PostCard({ post }: PostCardProps) {
         )}
 
         {images.length > 0 && (
-          <div className="px-8 pb-2">
+          <div className="px-6 pb-2">
             <ImageCollage images={images} />
           </div>
         )}
